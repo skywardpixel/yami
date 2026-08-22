@@ -156,7 +156,10 @@ struct PopoverView: View {
     private var about: some View {
         Text(model.aboutText)
             .font(.system(size: 10))
-            .foregroundStyle(.tertiary)
+            // A concrete colour, not `.tertiary`. Hierarchical styles get
+            // remapped against the popover's material, and selectable text in
+            // that context came out at full label brightness.
+            .foregroundStyle(Color.primary.opacity(0.45))
             .textSelection(.enabled)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.top, 8)
