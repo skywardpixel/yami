@@ -128,6 +128,28 @@ the proxy port, not just a live process.
 [`DESIGN.md`](DESIGN.md) has the full reasoning, including the failures that
 shaped it.
 
+## Releases
+
+Every push to `main` replaces a single rolling prerelease tagged `continuous`,
+so the latest build is always at a stable URL:
+
+```
+https://github.com/skywardpixel/yami/releases/download/continuous/Yami.zip
+```
+
+The version is derived from the commit — build number from the commit count,
+short SHA in the version string — and stamped into `Info.plist` before signing,
+since editing it afterwards would invalidate the seal.
+
+**Those builds are ad-hoc signed**, because CI has no Developer ID certificate,
+and that costs two things. The **System Proxy toggle cannot work**: the helper
+only accepts a client signed with the project's Apple team ID, which an ad-hoc
+build does not have. And **Gatekeeper will refuse to open it**, since it is
+neither Developer ID signed nor notarized — `xattr -dr com.apple.quarantine
+/Applications/Yami.app` gets past that. Running the core and managing the
+subscription work normally. For a fully working app, build locally with your own
+identity.
+
 ## Tests
 
 ```bash
