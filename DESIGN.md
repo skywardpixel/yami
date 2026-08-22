@@ -60,47 +60,6 @@ URL text field, so there is no second settings window anywhere in the app.
 │  Reveal Log                         │
 │  Quit Yami                          │
 │  Yami 0.3.0 · mihomo 1.19.30        │
-└─────────────────────────────────────┘  │
-│  Updated 2 hours ago      [Update]  │
-│                                     │
-│  APP                                │
-│  Launch at Login             [ ●──] │
-│  View Config                        │
-│  Reveal Log                         │
-│  Quit Yami                          │
-│  Yami 0.3.0 · mihomo 1.19.30        │
-└─────────────────────────────────────┘  │
-│  Updated 2 hours ago      [Update]  │
-│  Routing         [ Loyalsoldier ▾ ] │
-│                                     │
-│  APP                                │
-│  Launch at Login             [ ●──] │
-│  View Config                        │
-│  Reveal Log                         │
-│  Quit Yami                          │
-│  Yami 0.3.0 · mihomo 1.19.30        │
-└─────────────────────────────────────┘  │
-│  Updated 2 hours ago      [Update]  │
-│  Routing         [ Loyalsoldier ▾ ] │
-├─────────────────────────────────────┤
-│  Launch at Login             [ ●──] │
-│  View Config                        │
-│  Reveal Log                         │
-│  Quit Yami                          │
-│                                     │
-│  Yami 0.3.0 · mihomo 1.19.30        │
-└─────────────────────────────────────┘  │
-│  Updated 2 hours ago      [Update]  │
-├─────────────────────────────────────┤
-│  Routing         [ Loyalsoldier ▾ ] │
-├─────────────────────────────────────┤
-│  Launch at Login             [ ●──] │
-├─────────────────────────────────────┤
-│  View Config                        │
-│  Reveal Log                         │
-│  Quit Yami                          │
-│                                     │
-│  Yami 0.2.0 · mihomo 1.19.30        │
 └─────────────────────────────────────┘
 ```
 
