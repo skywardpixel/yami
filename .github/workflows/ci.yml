@@ -22,7 +22,11 @@ permissions:
 jobs:
   build:
     name: Build, test, bundle
-    runs-on: macos-15
+    # macOS gates new UI appearance on the SDK an app is linked against, so a
+    # macOS 15 SDK build runs on macOS 26 in compatibility mode and can look
+    # different from a local build. Matching the runner to the current OS keeps
+    # what CI ships identical to what is developed against.
+    runs-on: macos-26
     timeout-minutes: 45
 
     env:
@@ -129,6 +133,10 @@ jobs:
           test -f build/Yami.app/Contents/Resources/AppIcon.icns
           # GPL-3.0: the licence must ship whenever the core does.
           test -f build/Yami.app/Contents/Resources/mihomo-LICENSE.txt
+          # Surfaced because a silent runner-image change would otherwise alter
+          # the app's appearance with nothing else to show for it.
+          otool -l build/Yami.app/Contents/MacOS/Yami \
+            | grep -A5 LC_BUILD_VERSION | grep -E 'minos|sdk' | head -2
           echo "bundle ok"
 
       - name: Integration checks
