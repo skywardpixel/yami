@@ -172,7 +172,12 @@ Four components hang off it, each with one job:
 ---
 
 **The About line** names both versions, because "which Yami, which core" is the
-first question about any misbehaviour. The core version is read by running the
+first question about any misbehaviour. Yami's own version is derived from `git
+describe` at build time rather than a checked-in constant: a tagged build reads
+`0.3.0`, anything else reads `0.3.0-4-g1a2b3c4`, and an uncommitted tree adds
+`-dirty`. A hand-maintained number goes stale exactly when it matters — an
+install lagging behind the repository looked identical to a current one until
+this changed. The core version is read by running the
 binary Yami would actually launch — hardcoding it would drift the moment the core
 is bundled, upgraded, or falls back to Homebrew — and the row's tooltip gives the
 path, so it is clear whether the bundled core or Homebrew's is in use. The text is

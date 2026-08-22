@@ -214,12 +214,17 @@ final class AppModel {
     var canInteract: Bool { !subscription.isUpdating }
 
     var aboutText: String {
-        "Yami \(Versions.app) · mihomo \(coreVersion ?? "…")"
+        "Yami \(Versions.display) · mihomo \(coreVersion ?? "…")"
     }
 
     /// Which binary the version came from — bundled or Homebrew — since that is
     /// the first thing worth knowing when the core misbehaves.
-    var aboutDetail: String { Paths.mihomo.path }
+    var aboutDetail: String {
+        var parts = ["Yami \(Versions.app) (build \(Versions.build))"]
+        if let source = Versions.source, source != Versions.app { parts.append(source) }
+        parts.append(Paths.mihomo.path)
+        return parts.joined(separator: "\n")
+    }
 
     enum Color3 { case green, red, amber, grey }
 }

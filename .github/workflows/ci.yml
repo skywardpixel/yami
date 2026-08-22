@@ -102,22 +102,16 @@ jobs:
           echo "YAMI_IDENTITY=-" >> "$GITHUB_ENV"
           echo "::notice::No signing certificate configured — building ad-hoc and publishing no artefacts."
 
-      - name: Version
+      # build.sh derives the version from git itself; this only names the asset.
+      # A tagged release is named for its version; the rolling build keeps a
+      # stable filename so its download URL never changes.
+      - name: Asset name
         run: |
           if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
-            VERSION="${GITHUB_REF#refs/tags/v}"
-            ASSET="Yami-${VERSION}.zip"
+            echo "ASSET=Yami-${GITHUB_REF#refs/tags/v}.zip" >> "$GITHUB_ENV"
           else
-            # Base version comes from Info.plist, so a canary never claims an
-            # older release's number.
-            BASE="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' \
-              Resources/Info.plist)"
-            VERSION="${BASE}-$(git rev-parse --short HEAD)"
-            ASSET="Yami.zip"   # stable URL for the rolling build
+            echo "ASSET=Yami.zip" >> "$GITHUB_ENV"
           fi
-          echo "YAMI_VERSION=$VERSION" >> "$GITHUB_ENV"
-          echo "YAMI_BUILD=$(git rev-list --count HEAD)" >> "$GITHUB_ENV"
-          echo "ASSET=$ASSET" >> "$GITHUB_ENV"
 
       - name: Build the app bundle
         run: ./build.sh release

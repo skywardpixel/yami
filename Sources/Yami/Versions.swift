@@ -5,6 +5,24 @@ enum Versions {
         Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?"
     }
 
+    static var build: String {
+        Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "?"
+    }
+
+    /// Exact provenance — `0.3.0` on a tagged build, `0.3.0-4-g1a2b3c4` a few
+    /// commits later, with `-dirty` for a working tree that was not committed.
+    /// Stamped from `git describe` at build time.
+    static var source: String? {
+        Bundle.main.infoDictionary?["YamiSourceVersion"] as? String
+    }
+
+    /// What to show: the bare version for a release, the full description for
+    /// anything else, because "which build is this" is the question being asked.
+    static var display: String {
+        guard let source, source != app else { return app }
+        return source
+    }
+
     /// Asks the binary Yami would actually run, rather than hardcoding a number
     /// that drifts the moment the core is bundled, upgraded, or falls back to
     /// Homebrew. Blocking: call off the main actor.

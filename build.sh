@@ -72,15 +72,35 @@ cp "$BIN/Yami" "$APP/Contents/MacOS/Yami"
 cp "$BIN/YamiHelper" "$APP/Contents/MacOS/dev.yami.helper"
 cp "$ROOT/Resources/Info.plist" "$APP/Contents/Info.plist"
 
-# Stamped before signing, never after: editing Info.plist invalidates the seal.
-# CI derives these from the commit, so a downloaded build says where it came from.
-if [ -n "${YAMI_VERSION:-}" ]; then
-    /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $YAMI_VERSION" \
+# Version comes from git, so cutting a release is `git tag` and nothing else.
+# The value in Resources/Info.plist is only a fallback for builds from a tarball
+# with no repository. Stamped before signing, never after: editing Info.plist
+# invalidates the seal.
+#
+#   CFBundleShortVersionString  the last v* tag, e.g. 0.3.0 — Apple wants digits
+#   CFBundleVersion             commit count, monotonic across the history
+#   YamiSourceVersion           exact provenance, e.g. 0.3.0-4-g1a2b3c4-dirty
+TAG="$(git -C "$ROOT" describe --tags --match 'v*' --abbrev=0 2>/dev/null || true)"
+DESCRIBE="$(git -C "$ROOT" describe --tags --match 'v*' --dirty --always 2>/dev/null || true)"
+COMMITS="$(git -C "$ROOT" rev-list --count HEAD 2>/dev/null || true)"
+
+VERSION="${YAMI_VERSION:-${TAG#v}}"
+SOURCE="${YAMI_SOURCE:-${DESCRIBE#v}}"
+BUILD="${YAMI_BUILD:-$COMMITS}"
+
+if [ -n "$VERSION" ]; then
+    /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $VERSION" \
         "$APP/Contents/Info.plist"
 fi
-if [ -n "${YAMI_BUILD:-}" ]; then
-    /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $YAMI_BUILD" "$APP/Contents/Info.plist"
+if [ -n "$BUILD" ]; then
+    /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD" "$APP/Contents/Info.plist"
 fi
+if [ -n "$SOURCE" ]; then
+    /usr/libexec/PlistBuddy -c "Add :YamiSourceVersion string $SOURCE" \
+        "$APP/Contents/Info.plist" 2>/dev/null \
+        || /usr/libexec/PlistBuddy -c "Set :YamiSourceVersion $SOURCE" "$APP/Contents/Info.plist"
+fi
+echo "version: ${VERSION:-?} (${BUILD:-?})${SOURCE:+  source: $SOURCE}"
 cp "$ROOT/Resources/dev.yami.helper.plist" "$APP/Contents/Library/LaunchDaemons/"
 cp "$ROOT/Resources/AppIcon.icns" "$APP/Contents/Resources/"
 

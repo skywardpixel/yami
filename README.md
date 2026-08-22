@@ -158,9 +158,21 @@ https://github.com/skywardpixel/yami/releases/download/canary/Yami.zip
 Tagged releases are cut by pushing a `v*` tag, which publishes a real release
 named for that version.
 
-The version is derived from the commit — build number from the commit count,
-short SHA in the version string — and stamped into `Info.plist` before signing,
-since editing it afterwards would invalidate the seal.
+The version comes from git, so cutting a release is `git tag v0.4.0 && git push
+origin v0.4.0` and nothing else — no file to bump. `build.sh` stamps three values
+into `Info.plist` before signing (editing it afterwards would invalidate the
+seal):
+
+| | |
+|---|---|
+| `CFBundleShortVersionString` | the last `v*` tag, e.g. `0.3.0` |
+| `CFBundleVersion` | commit count, monotonic across the history |
+| `YamiSourceVersion` | exact provenance, e.g. `0.3.0-4-g1a2b3c4-dirty` |
+
+The About line shows the bare version for a tagged build and the full
+description for anything else, so a local build never passes for a release. The
+value committed in `Resources/Info.plist` is only a fallback for building from a
+tarball with no repository.
 
 Artefacts are only published when a Developer ID certificate is configured — see
 [docs/RELEASING.md](docs/RELEASING.md). Without one, CI still builds and tests,
