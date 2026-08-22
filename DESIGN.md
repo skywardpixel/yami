@@ -34,7 +34,10 @@ URL text field, so there is no second settings window anywhere in the app.
 │  Updated 2 hours ago      [Update]  │
 ├─────────────────────────────────────┤
 │  Launch at Login             [ ●──] │
-│  Reveal Log              Quit Yami  │
+├─────────────────────────────────────┤
+│  View Config                        │
+│  Reveal Log                         │
+│  Quit Yami                          │
 └─────────────────────────────────────┘
 ```
 
