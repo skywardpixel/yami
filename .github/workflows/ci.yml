@@ -206,37 +206,29 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
+          # Read back what was actually stamped, rather than recomputing it and
+          # risking a title that disagrees with the bundle.
+          PLIST=build/Yami.app/Contents/Info.plist
+          VERSION="$(/usr/libexec/PlistBuddy -c 'Print :YamiSourceVersion' "$PLIST")"
+          BUILD="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$PLIST")"
           SUBJECT="$(git log -1 --pretty=%s)"
           cat > notes.md <<NOTES
           Automatic build of \`main\` — replaced on every push.
 
           **Commit** [\`$(git rev-parse --short HEAD)\`](${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}) — $SUBJECT
-          **Version** ${YAMI_VERSION} (build ${YAMI_BUILD})
+          **Version** ${VERSION} (build ${BUILD})
 
           ---
 
-          ### Read before installing
+          Signed with a Developer ID certificate and notarized by Apple, so it opens
+          without warnings. Unzip and drag \`Yami.app\` to Applications.
 
-          This build is **ad-hoc signed**, because CI has no Developer ID certificate.
-          Two consequences:
-
-          1. **The System Proxy toggle will not work.** The privileged helper only accepts
-             connections from a binary signed with the project's Apple team ID, and an
-             ad-hoc build has none. Running the core and managing the subscription work
-             normally.
-          2. **Gatekeeper will refuse to open it**, since it is neither signed with a
-             Developer ID nor notarized. To run it anyway:
-
-             \`\`\`bash
-             xattr -dr com.apple.quarantine /Applications/Yami.app
-             \`\`\`
-
-          For a build with a working system proxy, build locally with \`./build.sh release\`
-          using your own signing identity.
+          This is the tip of \`main\`, not a release — for a version that was cut
+          deliberately, use [the latest release](${{ github.server_url }}/${{ github.repository }}/releases/latest).
           NOTES
           gh release delete canary --cleanup-tag --yes 2>/dev/null || true
           gh release create canary "$ASSET" \
-            --title "Canary (${YAMI_VERSION})" \
+            --title "Canary (${VERSION})" \
             --notes-file notes.md \
             --prerelease \
             --target "${{ github.sha }}"
@@ -247,6 +239,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
+          VERSION="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' \
+            build/Yami.app/Contents/Info.plist)"
           # --match 'v*' matters: the rolling `canary` tag is otherwise the
           # nearest tag, and the changelog silently starts from it.
           PREVIOUS="$(git describe --tags --abbrev=0 --match 'v*' \
@@ -271,6 +265,6 @@ jobs:
             echo "nothing else needs installing."
           } > notes.md
           gh release create "${GITHUB_REF_NAME}" "$ASSET" \
-            --title "Yami ${YAMI_VERSION}" \
+            --title "Yami ${VERSION}" \
             --notes-file notes.md \
             --target "${{ github.sha }}"
