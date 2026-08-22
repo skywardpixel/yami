@@ -50,8 +50,17 @@ URL text field, so there is no second settings window anywhere in the app.
 │                                     │
 │  SUBSCRIPTION                       │
 │  ┌───────────────────────────────┐  │
-│  │ https://example.com/sub?tok…  │  │
+│  │ https://example.com/sub…   ↻  │  │
 │  └───────────────────────────────┘  │
+│  Updated 2 hours ago                │
+│                                     │
+│  APP                                │
+│  Launch at Login             [ ●──] │
+│  View Config                        │
+│  Reveal Log                         │
+│  Quit Yami                          │
+│  Yami 0.2.2 · mihomo 1.19.30        │
+└─────────────────────────────────────┘  │
 │  Updated 2 hours ago      [Update]  │
 │                                     │
 │  APP                                │

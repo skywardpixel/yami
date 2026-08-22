@@ -19,7 +19,7 @@ struct PopoverView: View {
             }
             section("SUBSCRIPTION") {
                 urlField($subscription.url)
-                updateRow(url: $subscription.url)
+                updatedCaption
             }
             section("APP") {
                 launchAtLoginRow
@@ -118,29 +118,63 @@ struct PopoverView: View {
 
     // MARK: - Subscription
 
-    /// Inset to match every other row: without it the field and the line below
-    /// sit 6pt further left than the headings and switches around them.
+    /// Hand-built rather than `.roundedBorder`, which cannot host a trailing
+    /// control. Refreshing belongs on the field it refreshes, and it gives the
+    /// spinner somewhere to sit that the user is already looking at.
     private func urlField(_ url: Binding<String>) -> some View {
-        TextField("https://…", text: url)
-            .textFieldStyle(.roundedBorder)
-            .font(.system(size: 11, design: .monospaced))
-            .lineLimit(1)
-            .onSubmit { Task { await model.update() } }
-            .padding(.horizontal, 6)
+        // The URL truncates against the button, so it needs a visible gap.
+        HStack(spacing: 7) {
+            TextField("https://…", text: url)
+                .textFieldStyle(.plain)
+                .font(.system(size: 11, design: .monospaced))
+                .lineLimit(1)
+                .onSubmit { Task { await model.update() } }
+            refreshButton(url: url)
+        }
+        .padding(.leading, 6)
+        .padding(.trailing, 4)
+        .frame(height: 22)
+        .background(
+            RoundedRectangle(cornerRadius: 5)
+                .fill(Color.primary.opacity(0.05))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 5)
+                        .strokeBorder(Color.primary.opacity(0.15))
+                )
+        )
+        .padding(.horizontal, 6)
     }
 
-    private func updateRow(url: Binding<String>) -> some View {
-        HStack {
-            Text(model.lastUpdatedText)
-                .font(.system(size: 11))
-                .foregroundStyle(.secondary)
-            Spacer()
-            Button("Update") { Task { await model.update() } }
-                .controlSize(.small)
-                .disabled(url.wrappedValue.isEmpty || !model.canInteract)
+    @ViewBuilder
+    private func refreshButton(url: Binding<String>) -> some View {
+        if model.subscription.isUpdating {
+            ProgressView()
+                .controlSize(.mini)
+        } else {
+            Button {
+                Task { await model.update() }
+            } label: {
+                Image(systemName: "arrow.clockwise")
+                    .font(.system(size: 10, weight: .medium))
+                    .frame(width: 16, height: 16)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .focusEffectDisabled()
+            .disabled(url.wrappedValue.isEmpty || !model.canInteract)
+            // The icon alone does not say what it does.
+            .help("Fetch the subscription again")
         }
-        .frame(height: PopoverMetrics.rowHeight)
-        .padding(.horizontal, 6)
+    }
+
+    /// A caption for the field above, matching the status line under Mihomo.
+    private var updatedCaption: some View {
+        Text(model.lastUpdatedText)
+            .font(.system(size: 11))
+            .foregroundStyle(.secondary)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 6)
+            .padding(.top, 4)
     }
 
     // MARK: - App
