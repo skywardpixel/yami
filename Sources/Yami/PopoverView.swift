@@ -9,16 +9,13 @@ struct PopoverView: View {
         @Bindable var subscription = model.subscription
 
         VStack(alignment: .leading, spacing: 0) {
-            coreSection
-            Divider().padding(.vertical, 10)
-            proxyRow
+            // Three groups rather than a divider between every control:
+            // what is running, what it is running, and the app itself.
+            connection
             Divider().padding(.vertical, 10)
             subscriptionSection(url: $subscription.url)
             Divider().padding(.vertical, 10)
-            launchAtLoginRow
-            Divider().padding(.vertical, 10)
-            actions
-            about
+            application
         }
         .padding(12)
         .frame(width: 280)
@@ -49,6 +46,25 @@ struct PopoverView: View {
     /// The core and the proxy are both plain on/off state, so they get the same
     /// control. A power button next to a switch implied they were different
     /// kinds of thing.
+    /// The core and the system proxy are one thought: is traffic being carried,
+    /// and is anything using it.
+    private var connection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            coreSection
+            proxyRow
+        }
+    }
+
+    /// Settings that belong to the app rather than to the connection, followed
+    /// by the actions.
+    private var application: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            launchAtLoginRow
+            actions
+            about
+        }
+    }
+
     private var coreSection: some View {
         VStack(alignment: .leading, spacing: 5) {
             switchRow(
@@ -96,6 +112,32 @@ struct PopoverView: View {
         )
     }
 
+    /// A picker rather than a switch: neither position is an "off", and
+    /// "Global" reads as a mode, not the absence of one.
+    private var routingRow: some View {
+        HStack(spacing: 0) {
+            Text("Routing")
+                .font(.system(size: 12))
+            Spacer(minLength: 8)
+            Picker("", selection: Binding(
+                get: { model.subscription.routing },
+                set: { model.setRouting($0) }
+            )) {
+                ForEach(Routing.allCases) { option in
+                    Text(option.label).tag(option)
+                }
+            }
+            .labelsHidden()
+            // A menu, not segments: three labels of this length do not fit
+            // across a 280pt popover.
+            .pickerStyle(.menu)
+            .controlSize(.small)
+            .fixedSize()
+        }
+        .disabled(!model.canInteract)
+        .help(model.subscription.routing.detail)
+    }
+
     private func switchRow(
         _ title: String,
         isOn: Binding<Bool>,
@@ -140,6 +182,8 @@ struct PopoverView: View {
                     .controlSize(.small)
                     .disabled(url.wrappedValue.isEmpty || !model.canInteract)
             }
+            routingRow
+                .padding(.top, 2)
         }
     }
 
@@ -167,7 +211,7 @@ struct PopoverView: View {
             .foregroundStyle(Color.primary.opacity(0.45))
             .textSelection(.enabled)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.top, 8)
+            .padding(.top, 2)
             .help(model.aboutDetail)
     }
 

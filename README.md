@@ -13,7 +13,6 @@ mihomo's own config, not in this UI.
 ┌─────────────────────────────────────┐
 │  Mihomo                      [ ●──] │
 │  ● Running · port 7890              │
-├─────────────────────────────────────┤
 │  System Proxy                [ ●──] │
 ├─────────────────────────────────────┤
 │  SUBSCRIPTION                       │
@@ -21,6 +20,18 @@ mihomo's own config, not in this UI.
 │  │ https://example.com/sub?tok…  │  │
 │  └───────────────────────────────┘  │
 │  Updated 2 hours ago      [Update]  │
+│  Routing         [ Loyalsoldier ▾ ] │
+├─────────────────────────────────────┤
+│  Launch at Login             [ ●──] │
+│  View Config                        │
+│  Reveal Log                         │
+│  Quit Yami                          │
+│                                     │
+│  Yami 0.2.2 · mihomo 1.19.30        │
+└─────────────────────────────────────┘  │
+│  Updated 2 hours ago      [Update]  │
+├─────────────────────────────────────┤
+│  Routing         [ Loyalsoldier ▾ ] │
 ├─────────────────────────────────────┤
 │  Launch at Login             [ ●──] │
 ├─────────────────────────────────────┤
@@ -125,6 +136,13 @@ atomically. A bad subscription can never take a working core down.
 thereafter. Both ends verify the other's code signature. The helper writes all
 network services in a single `SCPreferences` commit rather than shelling out to
 `networksetup`.
+
+**Routing.** Providers often ship a single `MATCH` rule and no real routing, so
+Yami offers three positions: the subscription's own rules, the
+[Loyalsoldier](https://github.com/Loyalsoldier/clash-rules) set (mainland China
+and LAN direct, ads rejected, everything else proxied), or Global. Switching
+re-renders from the subscription already on disk — no round-trip to the provider,
+and it works offline.
 
 **The config viewer.** **View Config** opens a read-only window showing the YAML
 the core actually loaded — the subscription with Yami's overrides applied, which

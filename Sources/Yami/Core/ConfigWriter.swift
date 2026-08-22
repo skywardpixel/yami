@@ -4,12 +4,14 @@ import Yams
 enum ConfigError: LocalizedError {
     case notYAML
     case notAConfig
+    case noPolicy
     case validationFailed(String)
 
     var errorDescription: String? {
         switch self {
         case .notYAML: "Response was not valid YAML"
         case .notAConfig: "No proxies in the downloaded config"
+        case .noPolicy: "Subscription defines no proxy group to route through"
         case .validationFailed(let detail): detail
         }
     }
@@ -37,7 +39,28 @@ enum ConfigWriter {
         "external-controller-pipe", "secret", "external-ui",
     ]
 
-    static func render(subscription yaml: String) throws -> String {
+    /// The group a subscription routes through — what "the proxy" means for
+    /// this provider. Taken from its own MATCH rule, since that is where a
+    /// provider states its intent, falling back to the first group it defines.
+    static func primaryPolicy(in config: [String: Any]) -> String? {
+        if let rules = config["rules"] as? [String] {
+            for rule in rules.reversed() {
+                let parts = rule.split(separator: ",").map {
+                    $0.trimmingCharacters(in: .whitespaces)
+                }
+                guard parts.count >= 2, parts[0].uppercased() == "MATCH" else { continue }
+                if parts[1] != "DIRECT", parts[1] != "REJECT" { return parts[1] }
+            }
+        }
+        if let groups = config["proxy-groups"] as? [[String: Any]] {
+            for group in groups {
+                if let name = group["name"] as? String { return name }
+            }
+        }
+        return nil
+    }
+
+    static func render(subscription yaml: String, routing: Routing) throws -> String {
         guard let loaded = try? Yams.load(yaml: yaml) else { throw ConfigError.notYAML }
         guard var config = loaded as? [String: Any] else { throw ConfigError.notYAML }
 
@@ -50,7 +73,30 @@ enum ConfigWriter {
         for key in removed { config.removeValue(forKey: key) }
         for (key, value) in overrides { config[key] = value }
 
+        // Routing is the one thing Yami will override, and only when asked:
+        // `.subscription` leaves the provider's rules and rule-providers alone.
+        if let policy = primaryPolicy(in: config),
+           let rules = routing.rules(routingThrough: policy) {
+            config["rules"] = try block(rules, key: "rules")
+            if routing.needsProviders {
+                config["rule-providers"] = try block(Routing.providers, key: "rule-providers")
+            } else {
+                config.removeValue(forKey: "rule-providers")
+            }
+        } else if routing != .subscription {
+            throw ConfigError.noPolicy
+        }
+
         return try Yams.dump(object: config)
+    }
+
+    /// Parses one of the embedded YAML fragments and pulls out its top-level
+    /// value, so the rules and providers stay readable as YAML in the source.
+    private static func block(_ yaml: String, key: String) throws -> Any {
+        guard let loaded = try? Yams.load(yaml: yaml) as? [String: Any],
+              let value = loaded[key]
+        else { throw ConfigError.notYAML }
+        return value
     }
 
     /// Stage, validate with the core's own parser, then swap atomically. This is

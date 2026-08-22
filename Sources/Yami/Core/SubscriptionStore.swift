@@ -9,6 +9,9 @@ final class SubscriptionStore {
     var url: String {
         didSet { Self.store.set(url, forKey: Keys.url) }
     }
+    var routing: Routing {
+        didSet { Self.store.set(routing.rawValue, forKey: Keys.routing) }
+    }
     private(set) var lastUpdated: Date?
     private(set) var error: String?
     private(set) var isUpdating = false
@@ -16,6 +19,7 @@ final class SubscriptionStore {
     private enum Keys {
         static let url = "subscriptionURL"
         static let lastUpdated = "subscriptionLastUpdated"
+        static let routing = "routing"
     }
 
     /// Test seam, paired with `Paths`: an instance launched under `YAMI_HOME`
@@ -32,6 +36,8 @@ final class SubscriptionStore {
 
     init() {
         url = Self.store.string(forKey: Keys.url) ?? ""
+        routing = Self.store.string(forKey: Keys.routing)
+            .flatMap(Routing.init(rawValue:)) ?? .rules
         let stamp = Self.store.double(forKey: Keys.lastUpdated)
         lastUpdated = stamp > 0 ? Date(timeIntervalSince1970: stamp) : nil
     }
@@ -69,10 +75,33 @@ final class SubscriptionStore {
 
         do {
             let yaml = try await Self.fetch(requestURL)
-            let rendered = try ConfigWriter.render(subscription: yaml)
+            // Kept so routing can be changed later without another download.
+            try? yaml.write(to: Paths.rawSubscription, atomically: true, encoding: .utf8)
+            let rendered = try ConfigWriter.render(subscription: yaml, routing: routing)
             try ConfigWriter.install(rendered)
             lastUpdated = Date()
             Self.store.set(lastUpdated!.timeIntervalSince1970, forKey: Keys.lastUpdated)
+            return true
+        } catch {
+            self.error = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+            return false
+        }
+    }
+
+    /// Re-renders the config from the subscription already on disk. Changing
+    /// routing should not cost a round-trip to the provider, and should work
+    /// with no network at all.
+    /// Returns true if a new config was installed.
+    @discardableResult
+    func apply(_ newRouting: Routing) -> Bool {
+        routing = newRouting
+        error = nil
+        guard let yaml = try? String(contentsOf: Paths.rawSubscription, encoding: .utf8) else {
+            // Nothing cached yet; the next update will pick the setting up.
+            return false
+        }
+        do {
+            try ConfigWriter.install(ConfigWriter.render(subscription: yaml, routing: newRouting))
             return true
         } catch {
             self.error = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription

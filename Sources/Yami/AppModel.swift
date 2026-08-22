@@ -121,6 +121,12 @@ final class AppModel {
         await proxy.setEnabled(on, port: Defaults.mixedPort)
     }
 
+    func setRouting(_ routing: Routing) {
+        if subscription.apply(routing) {
+            core.applyNewConfig()
+        }
+    }
+
     func setLaunchAtLogin(_ enabled: Bool) {
         settingError = nil
         do {

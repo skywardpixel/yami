@@ -19,6 +19,9 @@ enum Paths {
         .appending(path: "Library/Application Support/Yami", directoryHint: .isDirectory)
 
     static let config = support.appending(path: "config.yaml")
+    /// The provider's YAML as downloaded. Kept so routing can be changed
+    /// without asking the provider for the same file again.
+    static let rawSubscription = support.appending(path: "subscription.yaml")
     static let stagedConfig = support.appending(path: "config.yaml.new")
     static let socket = support.appending(path: "api.sock")
 

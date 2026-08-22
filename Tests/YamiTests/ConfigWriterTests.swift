@@ -30,14 +30,14 @@ struct ConfigWriterTests {
           - MATCH,DIRECT
         """
 
-    private func rendered(_ yaml: String) throws -> [String: Any] {
-        let output = try ConfigWriter.render(subscription: yaml)
+    private func rendered(_ yaml: String, routing: Routing = .global) throws -> [String: Any] {
+        let output = try ConfigWriter.render(subscription: yaml, routing: routing)
         return try #require(try Yams.load(yaml: output) as? [String: Any])
     }
 
     private func error(_ yaml: String) -> ConfigError? {
         do {
-            _ = try ConfigWriter.render(subscription: yaml)
+            _ = try ConfigWriter.render(subscription: yaml, routing: .global)
             return nil
         } catch let error as ConfigError {
             return error
@@ -71,15 +71,11 @@ struct ConfigWriterTests {
         }
     }
 
-    @Test("passes the provider's own proxies, groups and rules through untouched")
+    @Test("passes the provider's own proxies and groups through untouched")
     func preservesProviderContent() throws {
         let config = try rendered(Self.hostile)
         #expect((config["proxies"] as? [Any])?.count == 1)
         #expect((config["proxy-groups"] as? [Any])?.count == 1)
-        #expect(config["rules"] as? [String] == [
-            "DOMAIN-SUFFIX,example.com,PROXY",
-            "MATCH,DIRECT",
-        ])
     }
 
     /// Providers gate their config behind a login and hand a browser a page

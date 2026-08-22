@@ -43,15 +43,26 @@ URL text field, so there is no second settings window anywhere in the app.
 ```
 ┌─────────────────────────────────────┐
 │  Mihomo                      [ ●──] │
-│  ● Running · port 7890              │   status, secondary
-├─────────────────────────────────────┤
+│  ● Running · port 7890              │
 │  System Proxy                [ ●──] │
 ├─────────────────────────────────────┤
 │  SUBSCRIPTION                       │
 │  ┌───────────────────────────────┐  │
-│  │ https://example.com/sub?tok…  │  │   single-line TextField
+│  │ https://example.com/sub?tok…  │  │
 │  └───────────────────────────────┘  │
 │  Updated 2 hours ago      [Update]  │
+│  Routing         [ Loyalsoldier ▾ ] │
+├─────────────────────────────────────┤
+│  Launch at Login             [ ●──] │
+│  View Config                        │
+│  Reveal Log                         │
+│  Quit Yami                          │
+│                                     │
+│  Yami 0.2.2 · mihomo 1.19.30        │
+└─────────────────────────────────────┘  │
+│  Updated 2 hours ago      [Update]  │
+├─────────────────────────────────────┤
+│  Routing         [ Loyalsoldier ▾ ] │
 ├─────────────────────────────────────┤
 │  Launch at Login             [ ●──] │
 ├─────────────────────────────────────┤
@@ -83,6 +94,11 @@ than no switch.
 The core, the system proxy and the login item are all plain on/off state, so they
 all get the same control. An earlier version used a power button for the core and
 a switch for the proxy, which implied they were different kinds of thing.
+
+The controls sit in three groups rather than behind a divider each: what is
+running, what it is running, and the app itself. Routing lives with the
+subscription because it re-renders the same file. Six separated sections in a
+280pt popover read as a list of unrelated switches.
 
 The three actions below them are full rows, not a row of links. Link-blue reads
 as "opens a web page" rather than a local action, a run of text buttons is a
@@ -185,6 +201,46 @@ Read-only and labelled as generated: the file is rewritten on every update, so a
 edit made here would silently disappear. It shows node passwords and keys in
 plaintext because the config contains them; there is deliberately no share or
 export affordance.
+
+## Routing
+
+The one place Yami overrides what a subscription ships, and only when asked.
+There is still no rule editor: the choice is between three whole positions.
+
+| | |
+|---|---|
+| **Subscription** | The provider's rules and rule-providers, untouched |
+| **Loyalsoldier** | [clash-rules](https://github.com/Loyalsoldier/clash-rules) — proxy by default, mainland China and LAN direct, ads rejected |
+| **Global** | A single `MATCH` sending everything through the provider's group |
+
+This earns its place because providers frequently ship nothing worth keeping —
+the subscription this was built against contains exactly one rule, `MATCH,JMS`,
+so "use the provider's routing" means "no routing at all".
+
+**Rewriting the policy is what makes a public rule set usable.** Loyalsoldier's
+rules target a group literally named `PROXY`, which no subscription is obliged
+to define. Yami substitutes the group the provider's own `MATCH` rule points at,
+falling back to its first group — that is where a provider states which group it
+considers "the proxy".
+
+**`Global` is deliberately not mihomo's `mode: global`.** That routes through the
+GLOBAL selector, whose selection defaults to `DIRECT` and does not persist
+without `store-selected`. Measured on a live core: switching to it would have
+silently sent everything direct — the opposite of what the name promises. A
+single `MATCH` rule says what it does and survives a restart.
+
+**Why no ACL4SSR or blackmatrix7.** Not laziness — their rules reference ten or
+more named policy groups (`🚀 节点选择`, `🌍 国外媒体`, and so on) that a plain
+subscription does not define. Supporting them means synthesizing a whole
+proxy-group structure and mapping each onto the provider's nodes. Loyalsoldier
+drops in cleanly precisely because it only ever targets `DIRECT`, `PROXY` and
+`REJECT` — one substitution. Any future addition needs that same property.
+
+**Costs worth knowing.** The rule lists are fetched by the core at runtime and
+refreshed daily, so routing depends on a third party that decides what gets
+rejected and what bypasses the proxy. A first start with no network leaves those
+rules unmatched, and traffic falls through to `MATCH`. `GEOIP` rules pull a
+MMDB database on first use.
 
 ## Subscription handling
 
