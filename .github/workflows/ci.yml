@@ -104,7 +104,11 @@ jobs:
             VERSION="${GITHUB_REF#refs/tags/v}"
             ASSET="Yami-${VERSION}.zip"
           else
-            VERSION="0.1.0-$(git rev-parse --short HEAD)"
+            # Base version comes from Info.plist, so a canary never claims an
+            # older release's number.
+            BASE="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' \
+              Resources/Info.plist)"
+            VERSION="${BASE}-$(git rev-parse --short HEAD)"
             ASSET="Yami.zip"   # stable URL for the rolling build
           fi
           echo "YAMI_VERSION=$VERSION" >> "$GITHUB_ENV"
