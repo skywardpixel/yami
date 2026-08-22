@@ -84,12 +84,22 @@ EOF
 echo "verifying in $SCRATCH"
 echo "hello-from-origin" > "$SCRATCH/probe.txt"
 # No subshell: `$!` must be python's own pid, or cleanup kills the wrapper and
-# leaves the server squatting on the port for the next run.
+# leaves the server squatting on the port for the next run. Output is captured
+# rather than discarded — a silent origin failure used to be reported as the
+# proxy failing to carry traffic, which sends you debugging the wrong thing.
 lsof -nP -iTCP:$ORIGIN_PORT -sTCP:LISTEN -t 2>/dev/null | xargs -r kill 2>/dev/null
-python3 -m http.server $ORIGIN_PORT --bind 127.0.0.1 --directory "$SCRATCH" >/dev/null 2>&1 &
+python3 -m http.server $ORIGIN_PORT --bind 127.0.0.1 --directory "$SCRATCH" \
+    >"$SCRATCH/origin.log" 2>&1 &
 ORIGIN_PID=$!
-await 5 'curl -sf --max-time 1 -o /dev/null "http://127.0.0.1:'$ORIGIN_PORT'/probe.txt"' \
-    || echo "  (origin server did not come up)"
+if ! await 15 'curl -sf --max-time 1 -o /dev/null "http://127.0.0.1:'$ORIGIN_PORT'/probe.txt"'; then
+    echo "the test origin server never came up — the proxy checks below cannot mean anything"
+    echo "  python3: $(command -v python3 || echo 'not found')"
+    echo "  version: $(python3 -V 2>&1)"
+    echo "  port $ORIGIN_PORT holder: $(lsof -nP -iTCP:$ORIGIN_PORT -sTCP:LISTEN 2>/dev/null | tail -1)"
+    echo "  server log:"
+    sed 's/^/    /' "$SCRATCH/origin.log" 2>/dev/null || echo "    (empty)"
+    exit 1
+fi
 
 echo
 echo "1. core starts and actually serves"
