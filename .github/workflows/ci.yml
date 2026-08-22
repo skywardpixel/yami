@@ -146,16 +146,38 @@ jobs:
           NOTARY_KEY_P8: ${{ secrets.NOTARY_KEY_P8 }}
           NOTARY_KEY_ID: ${{ secrets.NOTARY_KEY_ID }}
           NOTARY_ISSUER_ID: ${{ secrets.NOTARY_ISSUER_ID }}
+          NOTARY_APPLE_ID: ${{ secrets.NOTARY_APPLE_ID }}
+          NOTARY_PASSWORD: ${{ secrets.NOTARY_PASSWORD }}
+          NOTARY_TEAM_ID: ${{ secrets.NOTARY_TEAM_ID }}
         run: |
           set -euo pipefail
-          printf '%s' "$NOTARY_KEY_P8" | base64 --decode > "$RUNNER_TEMP/notary.p8"
           ditto -c -k --sequesterRsrc --keepParent build/Yami.app "$RUNNER_TEMP/notarize.zip"
-          xcrun notarytool submit "$RUNNER_TEMP/notarize.zip" \
-            --key "$RUNNER_TEMP/notary.p8" \
-            --key-id "$NOTARY_KEY_ID" \
-            --issuer "$NOTARY_ISSUER_ID" \
-            --wait --timeout 30m
-          rm -f "$RUNNER_TEMP/notary.p8" "$RUNNER_TEMP/notarize.zip"
+
+          # notarytool takes either an App Store Connect API key or an Apple ID
+          # with an app-specific password. Neither has anything to do with the
+          # App Store; they are just the two ways Apple authenticates the
+          # notarization service.
+          if [ -n "$NOTARY_KEY_P8" ]; then
+            printf '%s' "$NOTARY_KEY_P8" | base64 --decode > "$RUNNER_TEMP/notary.p8"
+            xcrun notarytool submit "$RUNNER_TEMP/notarize.zip" \
+              --key "$RUNNER_TEMP/notary.p8" \
+              --key-id "$NOTARY_KEY_ID" \
+              --issuer "$NOTARY_ISSUER_ID" \
+              --wait --timeout 30m
+            rm -f "$RUNNER_TEMP/notary.p8"
+          elif [ -n "$NOTARY_APPLE_ID" ]; then
+            xcrun notarytool submit "$RUNNER_TEMP/notarize.zip" \
+              --apple-id "$NOTARY_APPLE_ID" \
+              --password "$NOTARY_PASSWORD" \
+              --team-id "$NOTARY_TEAM_ID" \
+              --wait --timeout 30m
+          else
+            echo "a signing certificate is configured but no notarization credentials are" >&2
+            echo "set NOTARY_KEY_P8/NOTARY_KEY_ID/NOTARY_ISSUER_ID, or" >&2
+            echo "NOTARY_APPLE_ID/NOTARY_PASSWORD/NOTARY_TEAM_ID" >&2
+            exit 1
+          fi
+          rm -f "$RUNNER_TEMP/notarize.zip"
           xcrun stapler staple build/Yami.app
           xcrun stapler validate build/Yami.app
           # The check a user's Mac performs on first launch.

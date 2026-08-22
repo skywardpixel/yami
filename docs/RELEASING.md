@@ -39,7 +39,22 @@ Xcode ▸ Settings ▸ Accounts ▸ select the team ▸ Manage Certificates ▸ 
 Then export it **with its private key**: Keychain Access ▸ My Certificates ▸
 right-click the certificate ▸ Export ▸ `.p12`, and set a password.
 
-## 4. Create an App Store Connect API key for notarization
+## 4. Credentials for notarization — pick one
+
+Notarization is a separate step from signing, and it is what removes the "Apple
+could not verify this app is free of malware" warning on a downloaded build.
+Developer ID signing alone does not.
+
+Apple authenticates it two ways. Neither has anything to do with the App Store —
+that is just where one of the credential types happens to live.
+
+### Option A — app-specific password (quicker)
+
+At <https://appleid.apple.com> ▸ Sign-In and Security ▸ App-Specific Passwords ▸
+generate one. Secrets to add: `NOTARY_APPLE_ID` (your Apple ID email),
+`NOTARY_PASSWORD` (the generated password), `NOTARY_TEAM_ID` (`AU534DT7GN`).
+
+### Option B — App Store Connect API key (better for CI)
 
 App Store Connect ▸ Users and Access ▸ Integrations ▸ App Store Connect API ▸
 Keys ▸ **+**. Give it the *Developer* role.
@@ -78,6 +93,13 @@ Before trusting CI with it, store a notarytool profile — this stays on your
 machine, so no key material passes through the repository:
 
 ```bash
+# option A
+xcrun notarytool store-credentials yami \
+    --apple-id you@example.com \
+    --team-id AU534DT7GN \
+    --password xxxx-xxxx-xxxx-xxxx
+
+# option B
 xcrun notarytool store-credentials yami \
     --key ~/Downloads/AuthKey_XXXXXXXX.p8 \
     --key-id XXXXXXXXXX \
