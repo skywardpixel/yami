@@ -17,7 +17,7 @@ struct PopoverView: View {
             Divider().padding(.vertical, 10)
             launchAtLoginRow
             Divider().padding(.vertical, 10)
-            footer
+            actions
         }
         .padding(12)
         .frame(width: 280)
@@ -137,22 +137,17 @@ struct PopoverView: View {
         }
     }
 
-    private var footer: some View {
-        HStack(spacing: 12) {
-            Button("Config", action: showConfig)
-                .buttonStyle(.link)
-                .font(.system(size: 11))
-                .disabled(!model.subscription.hasConfig)
-                .help("View the YAML mihomo is running")
-            Button("Log", action: model.revealLog)
-                .buttonStyle(.link)
-                .font(.system(size: 11))
-                .help("Reveal core.log in Finder")
-            Spacer(minLength: 8)
-            Button("Quit Yami", action: model.quit)
-                .buttonStyle(.link)
-                .font(.system(size: 11))
+    /// Full rows rather than a row of links: the footer had to abbreviate
+    /// "View Config" to "Config" to fit three across, and link-blue reads as a
+    /// web link rather than a local action.
+    private var actions: some View {
+        VStack(spacing: 1) {
+            MenuRow("View Config", enabled: model.subscription.hasConfig, action: showConfig)
+            MenuRow("Reveal Log", action: model.revealLog)
+            MenuRow("Quit Yami", action: model.quit)
         }
+        // Let the hover highlight breathe into the popover's own padding.
+        .padding(.horizontal, -6)
     }
 
     /// An accessory app has to activate itself, or the window opens behind

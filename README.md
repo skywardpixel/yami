@@ -130,12 +130,15 @@ shaped it.
 
 ## Releases
 
-Every push to `main` replaces a single rolling prerelease tagged `continuous`,
-so the latest build is always at a stable URL:
+Every push to `main` replaces a single rolling prerelease tagged `canary`, so the
+newest build is always at a stable URL:
 
 ```
-https://github.com/skywardpixel/yami/releases/download/continuous/Yami.zip
+https://github.com/skywardpixel/yami/releases/download/canary/Yami.zip
 ```
+
+Tagged releases are cut by pushing a `v*` tag, which publishes a real release
+named for that version.
 
 The version is derived from the commit — build number from the commit count,
 short SHA in the version string — and stamped into `Info.plist` before signing,
