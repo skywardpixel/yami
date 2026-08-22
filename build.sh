@@ -9,13 +9,26 @@ set -euo pipefail
 CONFIG="${1:-debug}"
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 APP="$ROOT/build/Yami.app"
-# First available signing identity, unless told otherwise.
-IDENTITY="${YAMI_IDENTITY:-$(security find-identity -v -p codesigning \
-    | awk -F'"' '/Developer ID Application|Apple Development/ {print $2; exit}')}"
+# Developer ID first: it is the only identity a downloaded build can be
+# notarized with. `security` lists Apple Development first, so taking the first
+# match would quietly sign releases with a certificate Apple rejects.
+#
+# Captured once and parsed without an early `exit` — awk quitting mid-stream
+# SIGPIPEs `security`, which `pipefail` turns into a silent abort.
+IDENTITY="${YAMI_IDENTITY:-}"
+if [ -z "$IDENTITY" ]; then
+    AVAILABLE="$(security find-identity -v -p codesigning 2>/dev/null || true)"
+    for PATTERN in "Developer ID Application" "Apple Development"; do
+        IDENTITY="$(printf '%s\n' "$AVAILABLE" \
+            | awk -F'"' -v p="$PATTERN" 'index($0, p) && !seen {print $2; seen=1}')"
+        [ -n "$IDENTITY" ] && break
+    done
+fi
 if [ -z "$IDENTITY" ]; then
     echo "no code signing identity found; set YAMI_IDENTITY" >&2
     exit 1
 fi
+echo "signing as: $IDENTITY"
 
 # The app icon is drawn from the same crescent as the menu bar mark, so it is
 # generated rather than checked in as an opaque binary.
