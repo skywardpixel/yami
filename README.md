@@ -29,7 +29,7 @@ mihomo's own config, not in this UI.
 The menu bar mark carries both states independently — the core can run without
 the proxy, so a single dimmed→solid ramp would conflate them:
 
-<img src="docs/menubar-states.png" width="560" alt="Menu bar icon states">
+<img src="docs/menubar-states.png" width="544" alt="Menu bar icon states">
 
 *Left to right: both off, core running, proxy on, both on.* Dimmed means the core
 is stopped; the badge dot means the system proxy is on.
@@ -65,9 +65,17 @@ thing: `HelperInfo.clientRequirement` and `helperRequirement` in
 pin a team ID. That pin is the security boundary for a root daemon, so it cannot
 be derived at runtime — replace `AU534DT7GN` with your own team ID.
 
-`Resources/AppIcon.icns` is generated from the crescent in
-[`MenuBarIcon.swift`](Sources/Yami/MenuBarIcon.swift) on first build; delete it
-to regenerate after changing the mark.
+All the artwork is drawn from the crescent in
+[`MenuBarIcon.swift`](Sources/Yami/MenuBarIcon.swift), so the app icon, the
+status item and the figures above cannot drift apart. `Resources/AppIcon.icns`
+is generated on first build — delete it to regenerate after changing the mark.
+The README figures come from the same tool:
+
+```bash
+swiftc -O Sources/Yami/MenuBarIcon.swift tools/main.swift -o /tmp/makeicon
+/tmp/makeicon --png docs/icon.png
+/tmp/makeicon --states docs/menubar-states.png
+```
 
 ## How it works
 
