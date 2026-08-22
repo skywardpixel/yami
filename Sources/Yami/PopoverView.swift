@@ -118,12 +118,15 @@ struct PopoverView: View {
 
     // MARK: - Subscription
 
+    /// Inset to match every other row: without it the field and the line below
+    /// sit 6pt further left than the headings and switches around them.
     private func urlField(_ url: Binding<String>) -> some View {
         TextField("https://…", text: url)
             .textFieldStyle(.roundedBorder)
             .font(.system(size: 11, design: .monospaced))
             .lineLimit(1)
             .onSubmit { Task { await model.update() } }
+            .padding(.horizontal, 6)
     }
 
     private func updateRow(url: Binding<String>) -> some View {
@@ -137,6 +140,7 @@ struct PopoverView: View {
                 .disabled(url.wrappedValue.isEmpty || !model.canInteract)
         }
         .frame(height: PopoverMetrics.rowHeight)
+        .padding(.horizontal, 6)
     }
 
     // MARK: - App
