@@ -72,7 +72,29 @@ base64 -i /path/to/AuthKey_XXXX.p8 | pbcopy   # paste into NOTARY_KEY_P8
 Delete the local `.p12` and `.p8` afterwards, or move them into a password
 manager. The `.p8` cannot be re-downloaded.
 
-## 6. Push
+## 6. Prove it locally first (optional but recommended)
+
+Before trusting CI with it, store a notarytool profile — this stays on your
+machine, so no key material passes through the repository:
+
+```bash
+xcrun notarytool store-credentials yami \
+    --key ~/Downloads/AuthKey_XXXXXXXX.p8 \
+    --key-id XXXXXXXXXX \
+    --issuer xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+```
+
+Then:
+
+```bash
+./build.sh release
+./scripts/notarize.sh
+```
+
+It refuses to submit anything not signed with a Developer ID certificate, and
+ends by printing Gatekeeper's verdict — the same check a downloader's Mac makes.
+
+## 7. Push
 
 The next push to `main` publishes a signed, notarized `canary`; pushing a `v*`
 tag publishes a release. CI imports the certificate into a throwaway keychain,
