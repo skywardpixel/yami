@@ -34,7 +34,7 @@ echo "signing as: $IDENTITY"
 # generated rather than checked in as an opaque binary.
 if [ ! -f "$ROOT/Resources/AppIcon.icns" ]; then
     mkdir -p "$ROOT/build"
-    swiftc -O "$ROOT/Sources/Yami/MenuBarIcon.swift" "$ROOT/tools/main.swift" \
+    swiftc -O "$ROOT/Sources/Yami/MenuBarIcon.swift" "$ROOT/tools/GenerateArtwork.swift" \
         -o "$ROOT/build/makeicon"
     "$ROOT/build/makeicon" "$ROOT/Resources/AppIcon.icns"
 fi
@@ -51,7 +51,7 @@ swift build -c "$CONFIG" --product Yami
 # generated rather than checked in as an opaque binary.
 if [ ! -f "$ROOT/Resources/AppIcon.icns" ]; then
     mkdir -p "$ROOT/build"
-    swiftc -O "$ROOT/Sources/Yami/MenuBarIcon.swift" "$ROOT/tools/main.swift" \
+    swiftc -O "$ROOT/Sources/Yami/MenuBarIcon.swift" "$ROOT/tools/GenerateArtwork.swift" \
         -o "$ROOT/build/makeicon"
     "$ROOT/build/makeicon" "$ROOT/Resources/AppIcon.icns"
 fi

@@ -124,17 +124,25 @@ func writeStateFigure(to output: URL) {
     print("wrote \(output.path) (\(data.count) bytes)")
 }
 
-let arguments = Array(CommandLine.arguments.dropFirst())
-if arguments.first == "--states", arguments.count > 1 {
-    writeStateFigure(to: URL(fileURLWithPath: arguments[1]))
-} else if arguments.first == "--png", arguments.count > 1 {
-    // The README shows this at 96pt; 256 covers Retina with room to spare.
-    let data = renderAppIcon(size: 256).representation(using: .png, properties: [:])!
-    try! data.write(to: URL(fileURLWithPath: arguments[1]))
-    print("wrote \(arguments[1]) (\(data.count) bytes)")
-} else if let first = arguments.first {
-    writeAppIcon(to: URL(fileURLWithPath: first))
-} else {
-    print("usage: makeicon <out.icns> | makeicon --states <out.png>")
-    exit(1)
+/// Entry point. A `@main` type rather than top-level code in a file called
+/// `main.swift`, which Swift would otherwise require — and which reads like the
+/// application's entry point rather than an artwork generator.
+@main
+enum GenerateArtwork {
+    static func main() {
+    let arguments = Array(CommandLine.arguments.dropFirst())
+    if arguments.first == "--states", arguments.count > 1 {
+        writeStateFigure(to: URL(fileURLWithPath: arguments[1]))
+    } else if arguments.first == "--png", arguments.count > 1 {
+        // The README shows this at 96pt; 256 covers Retina with room to spare.
+        let data = renderAppIcon(size: 256).representation(using: .png, properties: [:])!
+        try! data.write(to: URL(fileURLWithPath: arguments[1]))
+        print("wrote \(arguments[1]) (\(data.count) bytes)")
+    } else if let first = arguments.first {
+        writeAppIcon(to: URL(fileURLWithPath: first))
+    } else {
+        print("usage: makeicon <out.icns> | makeicon --states <out.png>")
+        exit(1)
+    }
+    }
 }

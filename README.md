@@ -102,7 +102,7 @@ is generated on first build — delete it to regenerate after changing the mark.
 The README figures come from the same tool:
 
 ```bash
-swiftc -O Sources/Yami/MenuBarIcon.swift tools/main.swift -o /tmp/makeicon
+swiftc -O Sources/Yami/MenuBarIcon.swift tools/GenerateArtwork.swift -o /tmp/makeicon
 /tmp/makeicon --png docs/icon.png
 /tmp/makeicon --states docs/menubar-states.png
 ```
