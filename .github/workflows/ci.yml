@@ -3,6 +3,7 @@ name: CI
 on:
   push:
     branches: [main]
+    tags: ['v*']
   pull_request:
   workflow_dispatch:
 
@@ -53,10 +54,19 @@ jobs:
 
       # Ad-hoc: no Developer ID exists for this project, and CI has no keychain.
       # Enough to prove the bundle assembles and seals; not distributable.
-      - name: Version from the commit
+      # A tag names the version; anything else is identified by its commit.
+      - name: Version
         run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            VERSION="${GITHUB_REF#refs/tags/v}"
+            ASSET="Yami-${VERSION}.zip"
+          else
+            VERSION="0.1.0-$(git rev-parse --short HEAD)"
+            ASSET="Yami.zip"   # stable URL for the rolling build
+          fi
+          echo "YAMI_VERSION=$VERSION" >> "$GITHUB_ENV"
           echo "YAMI_BUILD=$(git rev-list --count HEAD)" >> "$GITHUB_ENV"
-          echo "YAMI_VERSION=0.1.0-$(git rev-parse --short HEAD)" >> "$GITHUB_ENV"
+          echo "ASSET=$ASSET" >> "$GITHUB_ENV"
 
       - name: Build the app bundle
         run: YAMI_IDENTITY=- ./build.sh release
@@ -88,8 +98,8 @@ jobs:
       # ditto rather than zip: it preserves the bundle's symlinks and the code
       # signature, which a plain zip mangles.
       - name: Package
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        run: ditto -c -k --sequesterRsrc --keepParent build/Yami.app Yami.zip
+        if: github.event_name == 'push'
+        run: ditto -c -k --sequesterRsrc --keepParent build/Yami.app "$ASSET"
 
       # One rolling release replaced on every push, rather than one release per
       # commit: the useful artefact is "the latest build", and per-commit
@@ -129,8 +139,47 @@ jobs:
           using your own signing identity.
           NOTES
           gh release delete continuous --cleanup-tag --yes 2>/dev/null || true
-          gh release create continuous Yami.zip \
+          gh release create continuous "$ASSET" \
             --title "Latest build (${YAMI_VERSION})" \
             --notes-file notes.md \
             --prerelease \
+            --target "${{ github.sha }}"
+
+      - name: Publish tagged release
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          PREVIOUS="$(git describe --tags --abbrev=0 "${GITHUB_REF_NAME}^" 2>/dev/null || true)"
+          {
+            echo "### Changes"
+            echo
+            if [ -n "$PREVIOUS" ]; then
+              git log --pretty='- %s' "${PREVIOUS}..${GITHUB_REF_NAME}"
+            else
+              git log --pretty='- %s' "${GITHUB_REF_NAME}"
+            fi
+            echo
+            echo "---"
+            echo
+            echo "### Read before installing"
+            echo
+            echo "This artefact is **ad-hoc signed** — CI has no Developer ID certificate."
+            echo "The **System Proxy toggle will not work** in it: the privileged helper only"
+            echo "accepts a client signed with the project's Apple team ID. Running the core"
+            echo "and managing the subscription work normally."
+            echo
+            echo "Gatekeeper also refuses to open an unnotarized build:"
+            echo
+            echo '```bash'
+            echo "xattr -dr com.apple.quarantine /Applications/Yami.app"
+            echo '```'
+            echo
+            echo "For a fully working app, build from source with your own signing identity:"
+            echo "\`./build.sh release\`."
+          } > notes.md
+          gh release create "${GITHUB_REF_NAME}" "$ASSET" \
+            --title "Yami ${YAMI_VERSION}" \
+            --notes-file notes.md \
             --target "${{ github.sha }}"
