@@ -22,6 +22,11 @@ struct PopoverView: View {
         }
         .padding(12)
         .frame(width: 280)
+        // Without a background of its own, a square-cornered backing shows
+        // through behind the content — invisible in dark mode, obvious in
+        // light, where it reads as a rectangle inside the rounded panel.
+        // Anything that fills the frame inherits the panel's rounded clip.
+        .background(.regularMaterial)
         // The only moment the user looks at these controls — and the system
         // proxy can be changed behind our back in System Settings.
         .task { await model.popoverAppeared() }
