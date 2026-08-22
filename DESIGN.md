@@ -54,9 +54,19 @@ else is a single click.
 | core exited | `Core exited — Reveal Log` | red |
 | subscription failed | `Update failed: <reason>` | amber, config unchanged |
 
-The core and the system proxy are both plain on/off state, so both get the same
-control. An earlier version used a power button for the core and a switch for the
-proxy, which implied they were different kinds of thing.
+Opening the popover re-reads the system proxy and login-item state: both can be
+changed behind Yami's back in System Settings, and a switch that lies is worse
+than no switch.
+
+The core, the system proxy and the login item are all plain on/off state, so they
+all get the same control. An earlier version used a power button for the core and
+a switch for the proxy, which implied they were different kinds of thing.
+
+The three actions below them are full rows, not a row of links. Link-blue reads
+as "opens a web page" rather than a local action, a run of text buttons is a
+small target, and fitting three across 256pt forced abbreviating "View Config"
+to "Config" — losing the verb. Rows highlight under the pointer, and the first
+has its focus ring suppressed since no menu row draws one.
 
 **The mark** is a crescent, drawn rather than borrowed from SF Symbols. It nods
 at the name (闇, darkness), has a distinctive silhouette among the squarish icons
@@ -123,6 +133,29 @@ Four components hang off it, each with one job:
 - **`HelperInstaller`** — `SMAppService.daemon(...)` registration and status.
 
 ---
+
+### The config viewer
+
+The one window in the app, and a deliberate exception to the popover rule: a
+read-only view of the YAML mihomo is actually running, opened from **View
+Config**.
+
+Handing the file to the system's default `.yaml` handler would have been smaller,
+but on a developer's Mac that handler is usually Xcode — a ten-second launch to
+read a proxy config. Revealing it in Finder is not viewing it. So the window
+earns its place: it opens instantly and shows exactly what the core loaded.
+
+It is backed by an `NSTextView` rather than a SwiftUI `Text` in a `ScrollView`.
+A subscription with a few hundred nodes runs to hundreds of kilobytes, which
+`Text` with selection enabled does not handle gracefully, and `NSTextView` brings
+⌘F along for free. Setting its string leaves the scroller at the end of the
+document, so it is explicitly scrolled back to the top — a config is read from
+the top, and Yams' alphabetical dump puts Yami's own overrides there.
+
+Read-only and labelled as generated: the file is rewritten on every update, so an
+edit made here would silently disappear. It shows node passwords and keys in
+plaintext because the config contains them; there is deliberately no share or
+export affordance.
 
 ## Subscription handling
 
@@ -193,8 +226,16 @@ every launch:
   which, combined with the interlock below, silently turned the user's proxy off
   and left no way back.
 
-**Auto-refresh:** on launch, if `lastUpdated` is more than 24h old. No interval
-setting, no scheduler.
+**Auto-refresh:** whenever `lastUpdated` is more than 24h old — checked at
+launch, on an hourly tick, when the Mac wakes, and when the popover opens. No
+interval setting, no scheduler.
+
+The first version checked only at launch, which quietly meant *never*: a menu bar
+app runs for weeks, so the 24-hour policy could not fire for anyone who did not
+quit daily. The hourly tick is cheap and the interval check decides whether
+anything is actually fetched; the wake notification exists because a sleeping
+Mac's timers do not fire, and waking is exactly when a subscription is most
+likely to have gone stale. The policy is a pure function so it can be tested.
 
 **Storage:**
 

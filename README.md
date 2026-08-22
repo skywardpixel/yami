@@ -22,7 +22,11 @@ mihomo's own config, not in this UI.
 │  └───────────────────────────────┘  │
 │  Updated 2 hours ago      [Update]  │
 ├─────────────────────────────────────┤
-│  Reveal Log              Quit Yami  │
+│  Launch at Login             [ ●──] │
+├─────────────────────────────────────┤
+│  View Config                        │
+│  Reveal Log                         │
+│  Quit Yami                          │
 └─────────────────────────────────────┘
 ```
 
@@ -119,6 +123,11 @@ atomically. A bad subscription can never take a working core down.
 thereafter. Both ends verify the other's code signature. The helper writes all
 network services in a single `SCPreferences` commit rather than shelling out to
 `networksetup`.
+
+**The config viewer.** **View Config** opens a read-only window showing the YAML
+the core actually loaded — the subscription with Yami's overrides applied, which
+is the thing you would want to check. It is the only window in the app; the
+default `.yaml` handler is usually Xcode, which is a poor way to read a config.
 
 **The interlock.** A system proxy is only as good as the core behind it. If the
 core stops, the proxy comes down with it; if Yami crashes, the helper undoes the
