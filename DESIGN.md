@@ -300,10 +300,20 @@ Yami/
 **Not sandboxed.** Spawning an external binary and vending a root daemon are both
 incompatible with the App Sandbox. Hardened runtime on, Developer ID signed.
 
-**The mihomo binary:** during development, a constant points at
-`/opt/homebrew/bin/mihomo` (1.19.30, already installed). For anything
-distributable, copy it into `Contents/MacOS/mihomo` and sign it as a nested
-executable — the app should not depend on the user's Homebrew.
+**The mihomo binary:** `Paths.mihomo` prefers `Contents/MacOS/mihomo` and falls
+back to `/opt/homebrew/bin/mihomo`, so a debug build needs no download and a
+release build carries its own core. `scripts/fetch-mihomo.sh` pins the version
+and verifies a recorded SHA-256 — upstream publishes no checksums of its own, so
+the first pin is trust-on-first-use and everything after it is reproducible.
+
+The core is re-signed with the team identity and the hardened runtime *before*
+the bundle is sealed, for the same nested-code-first reason as the helper:
+upstream ships it ad-hoc signed with `Identifier=a.out` and no runtime flag,
+which fails notarization.
+
+Bundling costs about 43 MB, pins the core version to the app's release cadence,
+and makes the app a redistributor of GPL-3.0 software — the licence ships in
+`Contents/Resources`, and the README records the tag the bytes came from.
 
 **Port 7890** is hardcoded. If the port is already bound at launch — this machine
 currently has a client on 7897, so a stale one is plausible — the core will fail

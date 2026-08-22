@@ -42,9 +42,9 @@ decides proxies and rules; Yami never second-guesses it.
 
 ## Requirements
 
-- macOS 14+
-- `brew install mihomo`
+- macOS 14+ on Apple Silicon
 - An Apple code signing identity — the privileged helper will not load unsigned
+- `brew install mihomo`, unless you bundle the core (below)
 
 ## Build
 
@@ -58,6 +58,30 @@ open build/Yami.app
 
 `build.sh` picks the first available signing identity; override with
 `YAMI_IDENTITY="Developer ID Application: …" ./build.sh release`.
+
+### Bundling the core
+
+`./build.sh release` ships mihomo inside the app, so it runs on machines without
+Homebrew. [`scripts/fetch-mihomo.sh`](scripts/fetch-mihomo.sh) downloads a pinned
+arm64 release into a gitignored `vendor/` and checks it against a SHA-256
+recorded in the script; a debug build bundles it only if it is already there, and
+otherwise falls back to `/opt/homebrew/bin/mihomo` at runtime. The binary adds
+about 43 MB, and pins the core version to whatever the script says.
+
+Upstream publishes no checksums or signatures for its release assets, so the
+recorded hash comes from a download verified by hand. Everything after that first
+pin is reproducible — a changed artefact fails the fetch rather than being signed
+and shipped. The core is re-signed with your identity and the hardened runtime
+before the bundle is sealed, since upstream ships it ad-hoc signed as `a.out`,
+which will not notarize.
+
+**mihomo is GPL-3.0.** Yami runs it as a separate process, so Yami itself is not
+a derivative work, but bundling the binary *is* redistribution: the licence ships
+in `Contents/Resources/mihomo-LICENSE.txt`, and the corresponding source is the
+pinned tag at
+[MetaCubeX/mihomo](https://github.com/MetaCubeX/mihomo/releases/tag/v1.19.30).
+Keep both in step if you bump the version. (Not legal advice — just the thing not
+to discover after shipping.)
 
 **Building under a different Apple developer account** requires changing one
 thing: `HelperInfo.clientRequirement` and `helperRequirement` in
