@@ -10,6 +10,9 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: write   # the rolling release is published from this workflow
+
 # One job, not several. macOS runners bill at 10x on a private repo, so each
 # extra job is a real cost rather than a tidiness win.
 #
@@ -23,6 +26,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Toolchain
         run: |
@@ -48,6 +53,11 @@ jobs:
 
       # Ad-hoc: no Developer ID exists for this project, and CI has no keychain.
       # Enough to prove the bundle assembles and seals; not distributable.
+      - name: Version from the commit
+        run: |
+          echo "YAMI_BUILD=$(git rev-list --count HEAD)" >> "$GITHUB_ENV"
+          echo "YAMI_VERSION=0.1.0-$(git rev-parse --short HEAD)" >> "$GITHUB_ENV"
+
       - name: Build the app bundle
         run: YAMI_IDENTITY=- ./build.sh release
 
@@ -74,3 +84,53 @@ jobs:
           name: Yami.app
           path: build/Yami.app
           retention-days: 7
+
+      # ditto rather than zip: it preserves the bundle's symlinks and the code
+      # signature, which a plain zip mangles.
+      - name: Package
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: ditto -c -k --sequesterRsrc --keepParent build/Yami.app Yami.zip
+
+      # One rolling release replaced on every push, rather than one release per
+      # commit: the useful artefact is "the latest build", and per-commit
+      # releases accumulate without bound.
+      - name: Publish rolling release
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          SUBJECT="$(git log -1 --pretty=%s)"
+          cat > notes.md <<NOTES
+          Automatic build of \`main\` — replaced on every push.
+
+          **Commit** [\`$(git rev-parse --short HEAD)\`](${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}) — $SUBJECT
+          **Version** ${YAMI_VERSION} (build ${YAMI_BUILD})
+
+          ---
+
+          ### Read before installing
+
+          This build is **ad-hoc signed**, because CI has no Developer ID certificate.
+          Two consequences:
+
+          1. **The System Proxy toggle will not work.** The privileged helper only accepts
+             connections from a binary signed with the project's Apple team ID, and an
+             ad-hoc build has none. Running the core and managing the subscription work
+             normally.
+          2. **Gatekeeper will refuse to open it**, since it is neither signed with a
+             Developer ID nor notarized. To run it anyway:
+
+             \`\`\`bash
+             xattr -dr com.apple.quarantine /Applications/Yami.app
+             \`\`\`
+
+          For a build with a working system proxy, build locally with \`./build.sh release\`
+          using your own signing identity.
+          NOTES
+          gh release delete continuous --cleanup-tag --yes 2>/dev/null || true
+          gh release create continuous Yami.zip \
+            --title "Latest build (${YAMI_VERSION})" \
+            --notes-file notes.md \
+            --prerelease \
+            --target "${{ github.sha }}"

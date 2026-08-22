@@ -58,6 +58,16 @@ mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Library/LaunchDaemons" "$APP/Conte
 cp "$BIN/Yami" "$APP/Contents/MacOS/Yami"
 cp "$BIN/YamiHelper" "$APP/Contents/MacOS/dev.yami.helper"
 cp "$ROOT/Resources/Info.plist" "$APP/Contents/Info.plist"
+
+# Stamped before signing, never after: editing Info.plist invalidates the seal.
+# CI derives these from the commit, so a downloaded build says where it came from.
+if [ -n "${YAMI_VERSION:-}" ]; then
+    /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $YAMI_VERSION" \
+        "$APP/Contents/Info.plist"
+fi
+if [ -n "${YAMI_BUILD:-}" ]; then
+    /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $YAMI_BUILD" "$APP/Contents/Info.plist"
+fi
 cp "$ROOT/Resources/dev.yami.helper.plist" "$APP/Contents/Library/LaunchDaemons/"
 cp "$ROOT/Resources/AppIcon.icns" "$APP/Contents/Resources/"
 
