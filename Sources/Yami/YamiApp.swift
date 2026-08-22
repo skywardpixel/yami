@@ -14,5 +14,11 @@ struct YamiApp: App {
                 .accessibilityLabel(MenuBarIcon.describe(coreRunning: running, proxyOn: proxied))
         }
         .menuBarExtraStyle(.window)
+
+        // The app has no dock icon, so this only ever appears on request.
+        Window("Mihomo Configuration", id: ConfigWindow.id) {
+            ConfigView()
+        }
+        .defaultSize(width: 620, height: 700)
     }
 }

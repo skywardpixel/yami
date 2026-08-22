@@ -3,6 +3,8 @@ import SwiftUI
 struct PopoverView: View {
     let model: AppModel
 
+    @Environment(\.openWindow) private var openWindow
+
     var body: some View {
         @Bindable var subscription = model.subscription
 
@@ -136,15 +138,28 @@ struct PopoverView: View {
     }
 
     private var footer: some View {
-        HStack {
-            Button("Reveal Log", action: model.revealLog)
+        HStack(spacing: 12) {
+            Button("Config", action: showConfig)
                 .buttonStyle(.link)
                 .font(.system(size: 11))
-            Spacer()
+                .disabled(!model.subscription.hasConfig)
+                .help("View the YAML mihomo is running")
+            Button("Log", action: model.revealLog)
+                .buttonStyle(.link)
+                .font(.system(size: 11))
+                .help("Reveal core.log in Finder")
+            Spacer(minLength: 8)
             Button("Quit Yami", action: model.quit)
                 .buttonStyle(.link)
                 .font(.system(size: 11))
         }
+    }
+
+    /// An accessory app has to activate itself, or the window opens behind
+    /// whatever the user was looking at.
+    private func showConfig() {
+        NSApp.activate(ignoringOtherApps: true)
+        openWindow(id: ConfigWindow.id)
     }
 
     private var dotColor: Color {
