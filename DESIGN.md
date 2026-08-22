@@ -46,11 +46,21 @@ URL text field, so there is no second settings window anywhere in the app.
 │  Mihomo                      [ ●──] │
 │  ● Running · port 7890              │
 │  System Proxy                [ ●──] │
+│  Routing         [ Loyalsoldier ▾ ] │
 │                                     │
 │  SUBSCRIPTION                       │
 │  ┌───────────────────────────────┐  │
 │  │ https://example.com/sub?tok…  │  │
 │  └───────────────────────────────┘  │
+│  Updated 2 hours ago      [Update]  │
+│                                     │
+│  APP                                │
+│  Launch at Login             [ ●──] │
+│  View Config                        │
+│  Reveal Log                         │
+│  Quit Yami                          │
+│  Yami 0.2.2 · mihomo 1.19.30        │
+└─────────────────────────────────────┘  │
 │  Updated 2 hours ago      [Update]  │
 │  Routing         [ Loyalsoldier ▾ ] │
 │                                     │
@@ -106,12 +116,20 @@ The core, the system proxy and the login item are all plain on/off state, so the
 all get the same control. An earlier version used a power button for the core and
 a switch for the proxy, which implied they were different kinds of thing.
 
-The controls sit in three labelled groups — what is running, what it is running,
-and the app itself. Routing lives with the subscription because it re-renders the
-same file. An earlier version put a divider between every control, which in a
-280pt popover read as a list of unrelated switches; headings say what a group is
-rather than only where it ends, so the dividers went with them. Doing both is
-twice the separation needed.
+The controls sit in three labelled groups. **Connection** holds everything that
+decides how traffic behaves — the core, the system proxy, and routing. Routing is
+*implemented* by re-rendering the subscription, but that is Yami's problem, not
+the user's: under a heading reading SUBSCRIPTION it looked like a property of the
+URL box above it. **Subscription** is then only the URL and its update.
+**App** is Yami's own settings and actions.
+
+An earlier version put a divider between every control, which in a 280pt popover
+read as a list of unrelated switches. Headings say what a group is rather than
+only where it ends, so the dividers went with them — doing both is twice the
+separation needed.
+
+Every control and action row shares one height, so a switch does not stand taller
+than the plain rows beneath it and the column keeps a single rhythm.
 
 The three actions below them are full rows, not a row of links. Link-blue reads
 as "opens a web page" rather than a local action, a run of text buttons is a

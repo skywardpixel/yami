@@ -9,78 +9,54 @@ struct PopoverView: View {
         @Bindable var subscription = model.subscription
 
         VStack(alignment: .leading, spacing: 16) {
-            // Headings rather than dividers. Three groups: what is running,
-            // what it is running, and the app itself. Doing both a heading and
-            // a rule between every group is twice the separation needed.
-            connection
-            subscriptionSection(url: $subscription.url)
-            application
+            // Headings rather than dividers: a heading says what a group is,
+            // not merely where it ends, so doing both is twice the separation.
+            section("CONNECTION") {
+                coreRow
+                statusLine
+                proxyRow
+                routingRow
+            }
+            section("SUBSCRIPTION") {
+                urlField($subscription.url)
+                updateRow(url: $subscription.url)
+            }
+            section("APP") {
+                launchAtLoginRow
+                MenuRow("View Config", enabled: model.subscription.hasConfig, action: showConfig)
+                MenuRow("Reveal Log", action: model.revealLog)
+                MenuRow("Quit Yami", action: model.quit)
+                about
+            }
         }
         .padding(12)
         .frame(width: 280)
         // Without a background of its own, a square-cornered backing shows
         // through behind the content — invisible in dark mode, obvious in
         // light, where it reads as a rectangle inside the rounded panel.
-        // Anything that fills the frame inherits the panel's rounded clip.
         .background(.regularMaterial)
         // The only moment the user looks at these controls — and the system
         // proxy can be changed behind our back in System Settings.
         .task { await model.popoverAppeared() }
     }
 
-    private var launchAtLoginRow: some View {
+    // MARK: - Connection
+
+    /// The core, the system proxy and routing are one thought: whether traffic
+    /// is carried, whether anything uses it, and where it goes.
+    private var coreRow: some View {
         switchRow(
-            "Launch at Login",
+            "Mihomo",
             isOn: Binding(
-                get: { model.launchAtLogin },
-                set: { model.setLaunchAtLogin($0) }
+                get: { model.core.state.isRunning || model.core.state.isBusy },
+                set: { _ in model.toggleCore() }
             ),
-            enabled: true,
-            help: "Start Yami when you log in"
+            enabled: model.core.canStart || model.core.state.isRunning,
+            help: "Run the Mihomo core"
         )
     }
 
-    // MARK: - Core
-
-    /// The core and the proxy are both plain on/off state, so they get the same
-    /// control. A power button next to a switch implied they were different
-    /// kinds of thing.
-    /// The core and the system proxy are one thought: is traffic being carried,
-    /// and is anything using it.
-    private var connection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            sectionHeader("CONNECTION")
-            coreSection
-            proxyRow
-        }
-    }
-
-    /// Settings that belong to the app rather than to the connection, followed
-    /// by the actions.
-    private var application: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            sectionHeader("APP")
-            launchAtLoginRow
-            actions
-            about
-        }
-    }
-
-    private var coreSection: some View {
-        VStack(alignment: .leading, spacing: 5) {
-            switchRow(
-                "Mihomo",
-                isOn: Binding(
-                    get: { model.core.state.isRunning || model.core.state.isBusy },
-                    set: { _ in model.toggleCore() }
-                ),
-                enabled: model.core.canStart || model.core.state.isRunning,
-                help: "Run the Mihomo core"
-            )
-            statusLine
-        }
-    }
-
+    /// A caption belonging to the row above, deliberately not a full-height row.
     private var statusLine: some View {
         HStack(spacing: 6) {
             Circle()
@@ -93,9 +69,9 @@ struct PopoverView: View {
                 .fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: 0)
         }
+        .padding(.horizontal, 6)
+        .padding(.bottom, 2)
     }
-
-    // MARK: - Proxy
 
     private var proxyRow: some View {
         switchRow(
@@ -113,8 +89,7 @@ struct PopoverView: View {
         )
     }
 
-    /// A picker rather than a switch: neither position is an "off", and
-    /// "Global" reads as a mode, not the absence of one.
+    /// A picker rather than a switch: none of the three positions is an "off".
     private var routingRow: some View {
         HStack(spacing: 0) {
             Text("Routing")
@@ -135,74 +110,47 @@ struct PopoverView: View {
             .controlSize(.small)
             .fixedSize()
         }
+        .frame(height: PopoverMetrics.rowHeight)
+        .padding(.horizontal, 6)
         .disabled(!model.canInteract)
         .help(model.subscription.routing.detail)
     }
 
-    private func sectionHeader(_ title: String) -> some View {
-        Text(title)
-            .font(.system(size: 10, weight: .semibold))
-            .foregroundStyle(.tertiary)
-    }
-
-    private func switchRow(
-        _ title: String,
-        isOn: Binding<Bool>,
-        enabled: Bool,
-        help: String
-    ) -> some View {
-        // A bare `Toggle(title:isOn:)` keeps the switch next to its label
-        // rather than at the trailing edge, so the two rows would not line up.
-        HStack(spacing: 0) {
-            Text(title)
-                .font(.system(size: 12))
-            Spacer(minLength: 8)
-            Toggle("", isOn: isOn)
-                .labelsHidden()
-                .toggleStyle(.switch)
-                .controlSize(.small)
-        }
-        .disabled(!enabled)
-        .help(help)
-    }
-
     // MARK: - Subscription
 
-    private func subscriptionSection(url: Binding<String>) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            sectionHeader("SUBSCRIPTION")
-
-            TextField("https://…", text: url)
-                .textFieldStyle(.roundedBorder)
-                .font(.system(size: 11, design: .monospaced))
-                .lineLimit(1)
-                .onSubmit { Task { await model.update() } }
-
-            HStack {
-                Text(model.lastUpdatedText)
-                    .font(.system(size: 11))
-                    .foregroundStyle(.secondary)
-                Spacer()
-                Button("Update") { Task { await model.update() } }
-                    .controlSize(.small)
-                    .disabled(url.wrappedValue.isEmpty || !model.canInteract)
-            }
-            routingRow
-                .padding(.top, 2)
-        }
+    private func urlField(_ url: Binding<String>) -> some View {
+        TextField("https://…", text: url)
+            .textFieldStyle(.roundedBorder)
+            .font(.system(size: 11, design: .monospaced))
+            .lineLimit(1)
+            .onSubmit { Task { await model.update() } }
     }
 
-    /// Full rows rather than a row of links: the footer had to abbreviate
-    /// "View Config" to "Config" to fit three across, and link-blue reads as a
-    /// web link rather than a local action.
-    private var actions: some View {
-        VStack(spacing: 1) {
-            MenuRow("View Config", enabled: model.subscription.hasConfig, action: showConfig)
-            MenuRow("Reveal Log", action: model.revealLog)
-            MenuRow("Quit Yami", action: model.quit)
+    private func updateRow(url: Binding<String>) -> some View {
+        HStack {
+            Text(model.lastUpdatedText)
+                .font(.system(size: 11))
+                .foregroundStyle(.secondary)
+            Spacer()
+            Button("Update") { Task { await model.update() } }
+                .controlSize(.small)
+                .disabled(url.wrappedValue.isEmpty || !model.canInteract)
         }
-        // Let the hover highlight breathe into the popover's own padding.
-        .padding(.horizontal, -6)
+        .frame(height: PopoverMetrics.rowHeight)
+    }
+
+    // MARK: - App
+
+    private var launchAtLoginRow: some View {
+        switchRow(
+            "Launch at Login",
+            isOn: Binding(
+                get: { model.launchAtLogin },
+                set: { model.setLaunchAtLogin($0) }
+            ),
+            enabled: true,
+            help: "Start Yami when you log in"
+        )
     }
 
     /// Selectable, because the first thing anyone reporting a problem is asked
@@ -216,8 +164,49 @@ struct PopoverView: View {
             .foregroundStyle(Color.primary.opacity(0.45))
             .textSelection(.enabled)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.top, 2)
+            .padding(.horizontal, 6)
+            .padding(.top, 6)
             .help(model.aboutDetail)
+    }
+
+    // MARK: - Building blocks
+
+    @ViewBuilder
+    private func section<Content: View>(
+        _ title: String,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 1) {
+            Text(title)
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundStyle(.tertiary)
+                .padding(.horizontal, 6)
+                .padding(.bottom, 4)
+            content()
+        }
+    }
+
+    /// Matches `MenuRow`'s height and inset, so a switch and a plain action row
+    /// sit on the same rhythm instead of the switch standing taller.
+    private func switchRow(
+        _ title: String,
+        isOn: Binding<Bool>,
+        enabled: Bool,
+        help: String
+    ) -> some View {
+        HStack(spacing: 0) {
+            Text(title)
+                .font(.system(size: 12))
+            Spacer(minLength: 8)
+            Toggle("", isOn: isOn)
+                .labelsHidden()
+                .toggleStyle(.switch)
+                .controlSize(.small)
+        }
+        .frame(height: PopoverMetrics.rowHeight)
+        .padding(.horizontal, 6)
+        .disabled(!enabled)
+        .help(help)
     }
 
     /// An accessory app has to activate itself, or the window opens behind
