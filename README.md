@@ -27,6 +27,8 @@ mihomo's own config, not in this UI.
 │  View Config                        │
 │  Reveal Log                         │
 │  Quit Yami                          │
+│                                     │
+│  Yami 0.2.0 · mihomo 1.19.30        │
 └─────────────────────────────────────┘
 ```
 

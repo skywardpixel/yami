@@ -18,6 +18,7 @@ struct PopoverView: View {
             launchAtLoginRow
             Divider().padding(.vertical, 10)
             actions
+            about
         }
         .padding(12)
         .frame(width: 280)
@@ -148,6 +149,18 @@ struct PopoverView: View {
         }
         // Let the hover highlight breathe into the popover's own padding.
         .padding(.horizontal, -6)
+    }
+
+    /// Selectable, because the first thing anyone reporting a problem is asked
+    /// for is the two version numbers.
+    private var about: some View {
+        Text(model.aboutText)
+            .font(.system(size: 10))
+            .foregroundStyle(.tertiary)
+            .textSelection(.enabled)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.top, 8)
+            .help(model.aboutDetail)
     }
 
     /// An accessory app has to activate itself, or the window opens behind

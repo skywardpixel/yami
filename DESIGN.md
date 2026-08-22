@@ -38,6 +38,8 @@ URL text field, so there is no second settings window anywhere in the app.
 │  View Config                        │
 │  Reveal Log                         │
 │  Quit Yami                          │
+│                                     │
+│  Yami 0.2.0 · mihomo 1.19.30        │
 └─────────────────────────────────────┘
 ```
 
@@ -133,6 +135,13 @@ Four components hang off it, each with one job:
 - **`HelperInstaller`** — `SMAppService.daemon(...)` registration and status.
 
 ---
+
+**The About line** names both versions, because "which Yami, which core" is the
+first question about any misbehaviour. The core version is read by running the
+binary Yami would actually launch — hardcoding it would drift the moment the core
+is bundled, upgraded, or falls back to Homebrew — and the row's tooltip gives the
+path, so it is clear whether the bundled core or Homebrew's is in use. The text is
+selectable, since it exists to be pasted into a bug report.
 
 ### The config viewer
 

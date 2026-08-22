@@ -160,3 +160,32 @@ struct RefreshPolicyTests {
         ))
     }
 }
+
+/// The core version is read from whichever binary Yami would actually run, so
+/// the parser has to cope with both spellings mihomo emits.
+@Suite("Version parsing")
+struct VersionParsingTests {
+    @Test("reads the bundled build's v-prefixed version")
+    func bundled() {
+        let output = "Mihomo Meta v1.19.30 darwin arm64 with go1.26.6 Sun Aug 16 10:01:05 UTC 2026\nUse tags: with_gvisor"
+        #expect(Versions.parseCore(output) == "1.19.30")
+    }
+
+    @Test("reads the Homebrew build, which omits the v")
+    func homebrew() {
+        let output = "Mihomo Meta 1.19.30 darwin arm64 with go1.26.6 2026-08-16T08:35:56Z\nUse tags: with_gvisor"
+        #expect(Versions.parseCore(output) == "1.19.30")
+    }
+
+    /// "go1.26.6" appears on the same line and must not win.
+    @Test("does not mistake the Go version for the core version")
+    func ignoresGoVersion() {
+        #expect(Versions.parseCore("Mihomo Meta v2.0 darwin arm64 with go1.26.6") == "2.0")
+    }
+
+    @Test("returns nil rather than guessing when there is no version")
+    func noVersion() {
+        #expect(Versions.parseCore("") == nil)
+        #expect(Versions.parseCore("command not found") == nil)
+    }
+}

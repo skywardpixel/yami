@@ -10,6 +10,7 @@ final class AppModel {
     let proxy = ProxyController()
 
     var launchAtLogin: Bool = LoginItem.isEnabled
+    private(set) var coreVersion: String?
     private(set) var settingError: String?
 
     @ObservationIgnored private var terminationSignal: DispatchSourceSignal?
@@ -73,6 +74,7 @@ final class AppModel {
 
     private func launch() async {
         if subscription.hasConfig { core.start() }
+        coreVersion = await Task.detached(priority: .utility) { Versions.readCore() }.value
         await proxy.refresh()
         await refreshIfStale()
     }
@@ -204,6 +206,14 @@ final class AppModel {
     var canToggleProxy: Bool { core.state.isRunning || proxy.isOn }
 
     var canInteract: Bool { !subscription.isUpdating }
+
+    var aboutText: String {
+        "Yami \(Versions.app) · mihomo \(coreVersion ?? "…")"
+    }
+
+    /// Which binary the version came from — bundled or Homebrew — since that is
+    /// the first thing worth knowing when the core misbehaves.
+    var aboutDetail: String { Paths.mihomo.path }
 
     enum Color3 { case green, red, amber, grey }
 }
