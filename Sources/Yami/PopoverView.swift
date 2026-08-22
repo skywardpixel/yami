@@ -8,13 +8,12 @@ struct PopoverView: View {
     var body: some View {
         @Bindable var subscription = model.subscription
 
-        VStack(alignment: .leading, spacing: 0) {
-            // Three groups rather than a divider between every control:
-            // what is running, what it is running, and the app itself.
+        VStack(alignment: .leading, spacing: 16) {
+            // Headings rather than dividers. Three groups: what is running,
+            // what it is running, and the app itself. Doing both a heading and
+            // a rule between every group is twice the separation needed.
             connection
-            Divider().padding(.vertical, 10)
             subscriptionSection(url: $subscription.url)
-            Divider().padding(.vertical, 10)
             application
         }
         .padding(12)
@@ -50,6 +49,7 @@ struct PopoverView: View {
     /// and is anything using it.
     private var connection: some View {
         VStack(alignment: .leading, spacing: 8) {
+            sectionHeader("CONNECTION")
             coreSection
             proxyRow
         }
@@ -59,6 +59,7 @@ struct PopoverView: View {
     /// by the actions.
     private var application: some View {
         VStack(alignment: .leading, spacing: 8) {
+            sectionHeader("APP")
             launchAtLoginRow
             actions
             about
@@ -138,6 +139,12 @@ struct PopoverView: View {
         .help(model.subscription.routing.detail)
     }
 
+    private func sectionHeader(_ title: String) -> some View {
+        Text(title)
+            .font(.system(size: 10, weight: .semibold))
+            .foregroundStyle(.tertiary)
+    }
+
     private func switchRow(
         _ title: String,
         isOn: Binding<Bool>,
@@ -163,9 +170,7 @@ struct PopoverView: View {
 
     private func subscriptionSection(url: Binding<String>) -> some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("SUBSCRIPTION")
-                .font(.system(size: 10, weight: .semibold))
-                .foregroundStyle(.tertiary)
+            sectionHeader("SUBSCRIPTION")
 
             TextField("https://…", text: url)
                 .textFieldStyle(.roundedBorder)

@@ -11,14 +11,25 @@ mihomo's own config, not in this UI.
 
 ```
 ┌─────────────────────────────────────┐
+│  CONNECTION                         │
 │  Mihomo                      [ ●──] │
 │  ● Running · port 7890              │
 │  System Proxy                [ ●──] │
-├─────────────────────────────────────┤
+│                                     │
 │  SUBSCRIPTION                       │
 │  ┌───────────────────────────────┐  │
 │  │ https://example.com/sub?tok…  │  │
 │  └───────────────────────────────┘  │
+│  Updated 2 hours ago      [Update]  │
+│  Routing         [ Loyalsoldier ▾ ] │
+│                                     │
+│  APP                                │
+│  Launch at Login             [ ●──] │
+│  View Config                        │
+│  Reveal Log                         │
+│  Quit Yami                          │
+│  Yami 0.2.2 · mihomo 1.19.30        │
+└─────────────────────────────────────┘  │
 │  Updated 2 hours ago      [Update]  │
 │  Routing         [ Loyalsoldier ▾ ] │
 ├─────────────────────────────────────┤
