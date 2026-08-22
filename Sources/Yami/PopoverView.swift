@@ -13,10 +13,27 @@ struct PopoverView: View {
             Divider().padding(.vertical, 10)
             subscriptionSection(url: $subscription.url)
             Divider().padding(.vertical, 10)
+            launchAtLoginRow
+            Divider().padding(.vertical, 10)
             footer
         }
         .padding(12)
         .frame(width: 280)
+        // The only moment the user looks at these controls — and the system
+        // proxy can be changed behind our back in System Settings.
+        .task { await model.popoverAppeared() }
+    }
+
+    private var launchAtLoginRow: some View {
+        switchRow(
+            "Launch at Login",
+            isOn: Binding(
+                get: { model.launchAtLogin },
+                set: { model.setLaunchAtLogin($0) }
+            ),
+            enabled: true,
+            help: "Start Yami when you log in"
+        )
     }
 
     // MARK: - Core

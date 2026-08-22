@@ -28,7 +28,7 @@ final class SubscriptionStore {
         return UserDefaults(suiteName: "dev.yami.verify") ?? .standard
     }()
 
-    private static let refreshInterval: TimeInterval = 24 * 60 * 60
+    nonisolated static let refreshInterval: TimeInterval = 24 * 60 * 60
 
     init() {
         url = Self.store.string(forKey: Keys.url) ?? ""
@@ -39,9 +39,19 @@ final class SubscriptionStore {
     var hasConfig: Bool { FileManager.default.fileExists(atPath: Paths.config.path) }
 
     var needsRefresh: Bool {
-        guard !url.isEmpty else { return false }
+        Self.needsRefresh(url: url, lastUpdated: lastUpdated)
+    }
+
+    /// Pure so the policy can be tested. It decides whether the app silently
+    /// serves a stale node list, which is worth pinning down.
+    nonisolated static func needsRefresh(
+        url: String,
+        lastUpdated: Date?,
+        now: Date = Date()
+    ) -> Bool {
+        guard !url.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return false }
         guard let lastUpdated else { return true }
-        return Date().timeIntervalSince(lastUpdated) > Self.refreshInterval
+        return now.timeIntervalSince(lastUpdated) > refreshInterval
     }
 
     /// Returns true if a new config was installed.

@@ -9,7 +9,11 @@ final class AppModel {
     let subscription = SubscriptionStore()
     let proxy = ProxyController()
 
+    var launchAtLogin: Bool = LoginItem.isEnabled
+    private(set) var settingError: String?
+
     @ObservationIgnored private var terminationSignal: DispatchSourceSignal?
+    @ObservationIgnored private var refreshLoop: Task<Void, Never>?
 
     init() {
         try? Paths.createDirectories()
@@ -37,8 +41,26 @@ final class AppModel {
         source.resume()
         terminationSignal = source
 
+        // Waking from sleep is when a subscription is most likely to have gone
+        // stale, and a sleeping Mac's timers do not fire.
+        NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.didWakeNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            MainActor.assumeIsolated {
+                guard let self else { return }
+                Task { @MainActor in await self.refreshIfStale() }
+            }
+        }
+
         observeCoreState()
+        startRefreshLoop()
         Task { await launch() }
+    }
+
+    deinit {
+        refreshLoop?.cancel()
     }
 
     /// Must not orphan the core, and must not leave the machine pointed at a
@@ -52,7 +74,33 @@ final class AppModel {
     private func launch() async {
         if subscription.hasConfig { core.start() }
         await proxy.refresh()
-        if subscription.needsRefresh { await update() }
+        await refreshIfStale()
+    }
+
+    /// The app stays running for weeks, so checking only at launch meant the
+    /// 24-hour refresh never actually fired. The hourly tick is cheap; the
+    /// interval check is what decides whether anything is fetched.
+    private func startRefreshLoop() {
+        refreshLoop = Task { [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(3600))
+                guard !Task.isCancelled else { return }
+                await self?.refreshIfStale()
+            }
+        }
+    }
+
+    private func refreshIfStale() async {
+        guard subscription.needsRefresh, !subscription.isUpdating else { return }
+        await update()
+    }
+
+    /// The popover is the only moment the user looks at these controls, and the
+    /// system proxy can be changed behind our back in System Settings.
+    func popoverAppeared() async {
+        await proxy.refresh()
+        launchAtLogin = LoginItem.isEnabled
+        await refreshIfStale()
     }
 
     // MARK: - Actions
@@ -69,6 +117,17 @@ final class AppModel {
 
     func setSystemProxy(_ on: Bool) async {
         await proxy.setEnabled(on, port: Defaults.mixedPort)
+    }
+
+    func setLaunchAtLogin(_ enabled: Bool) {
+        settingError = nil
+        do {
+            try LoginItem.set(enabled)
+        } catch {
+            settingError = "Could not change login item: \(error.localizedDescription)"
+        }
+        // Never report a state we did not reach.
+        launchAtLogin = LoginItem.isEnabled
     }
 
     func revealLog() {
@@ -115,6 +174,7 @@ final class AppModel {
     /// The one place errors surface, in order of what most needs acting on.
     var statusText: String {
         if subscription.isUpdating { return "Updating subscription…" }
+        if let error = settingError { return error }
         if let error = proxy.error { return error }
         if let error = subscription.error { return "Update failed: \(error)" }
         switch core.state {
@@ -126,7 +186,7 @@ final class AppModel {
     }
 
     var statusColor: Color3 {
-        if proxy.error != nil { return .amber }
+        if proxy.error != nil || settingError != nil { return .amber }
         if subscription.error != nil { return .amber }
         switch core.state {
         case .running: return .green

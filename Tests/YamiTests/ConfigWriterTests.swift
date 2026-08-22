@@ -111,3 +111,52 @@ struct ConfigWriterTests {
         }
     }
 }
+
+/// The refresh policy decides whether the app quietly serves a stale node list.
+/// It ran only at launch until a menu bar app's actual lifetime made that a bug.
+@Suite("Refresh policy")
+struct RefreshPolicyTests {
+    private let day = SubscriptionStore.refreshInterval
+
+    @Test("no URL means nothing to refresh")
+    func noURL() {
+        #expect(SubscriptionStore.needsRefresh(url: "", lastUpdated: nil) == false)
+        #expect(SubscriptionStore.needsRefresh(url: "   ", lastUpdated: Date()) == false)
+    }
+
+    @Test("a URL that has never been fetched needs a refresh")
+    func neverFetched() {
+        #expect(SubscriptionStore.needsRefresh(url: "https://example.com/sub", lastUpdated: nil))
+    }
+
+    @Test("a recent fetch is left alone")
+    func recentFetch() {
+        let now = Date()
+        #expect(SubscriptionStore.needsRefresh(
+            url: "https://example.com/sub",
+            lastUpdated: now.addingTimeInterval(-day + 60),
+            now: now
+        ) == false)
+    }
+
+    @Test("a fetch older than the interval is refreshed")
+    func staleFetch() {
+        let now = Date()
+        #expect(SubscriptionStore.needsRefresh(
+            url: "https://example.com/sub",
+            lastUpdated: now.addingTimeInterval(-day - 60),
+            now: now
+        ))
+    }
+
+    /// A Mac that slept for a week wakes with a clock far past the interval.
+    @Test("a long sleep triggers a refresh on wake")
+    func afterLongSleep() {
+        let now = Date()
+        #expect(SubscriptionStore.needsRefresh(
+            url: "https://example.com/sub",
+            lastUpdated: now.addingTimeInterval(-day * 7),
+            now: now
+        ))
+    }
+}
