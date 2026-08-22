@@ -1,0 +1,76 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+# One job, not several. macOS runners bill at 10x on a private repo, so each
+# extra job is a real cost rather than a tidiness win.
+#
+# Only first-party actions are used here. A build that signs code and downloads
+# a 43 MB binary is not somewhere to add third-party supply chain.
+jobs:
+  build:
+    name: Build, test, bundle
+    runs-on: macos-15
+    timeout-minutes: 25
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Toolchain
+        run: |
+          swift --version
+          xcodebuild -version
+
+      - name: Build
+        run: swift build --build-tests
+
+      - name: Unit tests
+        run: swift test
+
+      # Keyed on the fetch script, so bumping the pinned version or its
+      # checksum busts the cache instead of silently reusing the old core.
+      - name: Cache the pinned mihomo core
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: mihomo-${{ hashFiles('scripts/fetch-mihomo.sh') }}
+
+      - name: Fetch the core
+        run: ./scripts/fetch-mihomo.sh
+
+      # Ad-hoc: no Developer ID exists for this project, and CI has no keychain.
+      # Enough to prove the bundle assembles and seals; not distributable.
+      - name: Build the app bundle
+        run: YAMI_IDENTITY=- ./build.sh release
+
+      - name: Check the bundle
+        run: |
+          set -euo pipefail
+          codesign --verify --deep --strict build/Yami.app
+          test -x build/Yami.app/Contents/MacOS/Yami
+          test -x build/Yami.app/Contents/MacOS/dev.yami.helper
+          test -x build/Yami.app/Contents/MacOS/mihomo
+          test -f build/Yami.app/Contents/Library/LaunchDaemons/dev.yami.helper.plist
+          test -f build/Yami.app/Contents/Resources/AppIcon.icns
+          # GPL-3.0: the licence must ship whenever the core does.
+          test -f build/Yami.app/Contents/Resources/mihomo-LICENSE.txt
+          echo "bundle ok"
+
+      - name: Integration checks
+        run: ./scripts/verify.sh
+
+      - name: Upload the app
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: Yami.app
+          path: build/Yami.app
+          retention-days: 7
