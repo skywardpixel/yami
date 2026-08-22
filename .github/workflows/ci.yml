@@ -23,7 +23,13 @@ jobs:
   build:
     name: Build, test, bundle
     runs-on: macos-15
-    timeout-minutes: 25
+    timeout-minutes: 45
+
+    env:
+      # Release artefacts are only published when a Developer ID certificate is
+      # available. An ad-hoc build cannot be opened after download and its
+      # privileged helper rejects it, so shipping one is a trap.
+      SIGNED: ${{ secrets.MACOS_CERT_P12 != '' }}
 
     steps:
       - uses: actions/checkout@v4
@@ -55,6 +61,43 @@ jobs:
       # Ad-hoc: no Developer ID exists for this project, and CI has no keychain.
       # Enough to prove the bundle assembles and seals; not distributable.
       # A tag names the version; anything else is identified by its commit.
+      - name: Import the signing certificate
+        if: env.SIGNED == 'true'
+        env:
+          CERT_P12: ${{ secrets.MACOS_CERT_P12 }}
+          CERT_PASSWORD: ${{ secrets.MACOS_CERT_PASSWORD }}
+        run: |
+          set -euo pipefail
+          KEYCHAIN="$RUNNER_TEMP/signing.keychain-db"
+          KEYCHAIN_PASSWORD="$(uuidgen)"
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          security set-keychain-settings -lut 3600 "$KEYCHAIN"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+
+          printf '%s' "$CERT_P12" | base64 --decode > "$RUNNER_TEMP/cert.p12"
+          security import "$RUNNER_TEMP/cert.p12" -k "$KEYCHAIN" -P "$CERT_PASSWORD" \
+            -T /usr/bin/codesign
+          rm -f "$RUNNER_TEMP/cert.p12"
+          # Without this, codesign blocks on a UI prompt that no runner can answer.
+          security set-key-partition-list -S apple-tool:,apple:,codesign: \
+            -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN" > /dev/null
+          security list-keychain -d user -s "$KEYCHAIN" login.keychain-db
+
+          IDENTITY="$(security find-identity -v -p codesigning "$KEYCHAIN" \
+            | awk -F'"' '/Developer ID Application/ {print $2; exit}')"
+          if [ -z "$IDENTITY" ]; then
+            echo "the imported certificate is not a Developer ID Application cert" >&2
+            exit 1
+          fi
+          echo "YAMI_IDENTITY=$IDENTITY" >> "$GITHUB_ENV"
+          echo "signing as: $IDENTITY"
+
+      - name: Fall back to ad-hoc signing
+        if: env.SIGNED != 'true'
+        run: |
+          echo "YAMI_IDENTITY=-" >> "$GITHUB_ENV"
+          echo "::notice::No signing certificate configured — building ad-hoc and publishing no artefacts."
+
       - name: Version
         run: |
           if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
@@ -69,7 +112,7 @@ jobs:
           echo "ASSET=$ASSET" >> "$GITHUB_ENV"
 
       - name: Build the app bundle
-        run: YAMI_IDENTITY=- ./build.sh release
+        run: ./build.sh release
 
       - name: Check the bundle
         run: |
@@ -95,10 +138,33 @@ jobs:
           path: build/Yami.app
           retention-days: 7
 
+      # Must run before packaging: stapling writes the ticket into the bundle,
+      # and the zip has to carry it so an offline machine can validate.
+      - name: Notarize and staple
+        if: env.SIGNED == 'true' && github.event_name == 'push'
+        env:
+          NOTARY_KEY_P8: ${{ secrets.NOTARY_KEY_P8 }}
+          NOTARY_KEY_ID: ${{ secrets.NOTARY_KEY_ID }}
+          NOTARY_ISSUER_ID: ${{ secrets.NOTARY_ISSUER_ID }}
+        run: |
+          set -euo pipefail
+          printf '%s' "$NOTARY_KEY_P8" | base64 --decode > "$RUNNER_TEMP/notary.p8"
+          ditto -c -k --sequesterRsrc --keepParent build/Yami.app "$RUNNER_TEMP/notarize.zip"
+          xcrun notarytool submit "$RUNNER_TEMP/notarize.zip" \
+            --key "$RUNNER_TEMP/notary.p8" \
+            --key-id "$NOTARY_KEY_ID" \
+            --issuer "$NOTARY_ISSUER_ID" \
+            --wait --timeout 30m
+          rm -f "$RUNNER_TEMP/notary.p8" "$RUNNER_TEMP/notarize.zip"
+          xcrun stapler staple build/Yami.app
+          xcrun stapler validate build/Yami.app
+          # The check a user's Mac performs on first launch.
+          spctl -a -t exec -vvv build/Yami.app
+
       # ditto rather than zip: it preserves the bundle's symlinks and the code
       # signature, which a plain zip mangles.
       - name: Package
-        if: github.event_name == 'push'
+        if: env.SIGNED == 'true' && github.event_name == 'push'
         run: ditto -c -k --sequesterRsrc --keepParent build/Yami.app "$ASSET"
 
       # One rolling release replaced on every push, rather than one release per
@@ -107,7 +173,7 @@ jobs:
       # name for a build cut from every change. Not `latest`, which collides
       # with GitHub's own /releases/latest (that ignores prereleases).
       - name: Publish canary release
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: env.SIGNED == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -148,7 +214,7 @@ jobs:
             --target "${{ github.sha }}"
 
       - name: Publish tagged release
-        if: startsWith(github.ref, 'refs/tags/v')
+        if: env.SIGNED == 'true' && startsWith(github.ref, 'refs/tags/v')
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -165,21 +231,13 @@ jobs:
             echo
             echo "---"
             echo
-            echo "### Read before installing"
+            echo "### Install"
             echo
-            echo "This artefact is **ad-hoc signed** — CI has no Developer ID certificate."
-            echo "The **System Proxy toggle will not work** in it: the privileged helper only"
-            echo "accepts a client signed with the project's Apple team ID. Running the core"
-            echo "and managing the subscription work normally."
+            echo "Signed with a Developer ID certificate and notarized by Apple, so it opens"
+            echo "without warnings. Unzip and drag \`Yami.app\` to Applications."
             echo
-            echo "Gatekeeper also refuses to open an unnotarized build:"
-            echo
-            echo '```bash'
-            echo "xattr -dr com.apple.quarantine /Applications/Yami.app"
-            echo '```'
-            echo
-            echo "For a fully working app, build from source with your own signing identity:"
-            echo "\`./build.sh release\`."
+            echo "Requires macOS 14 or later on Apple Silicon. The mihomo core is bundled;"
+            echo "nothing else needs installing."
           } > notes.md
           gh release create "${GITHUB_REF_NAME}" "$ASSET" \
             --title "Yami ${YAMI_VERSION}" \

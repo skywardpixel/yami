@@ -82,16 +82,16 @@ else
     BUNDLED_CORE=0
 fi
 
-codesign --force --options runtime --identifier dev.yami.helper \
+codesign --force --options runtime --timestamp --identifier dev.yami.helper \
     --sign "$IDENTITY" "$APP/Contents/MacOS/dev.yami.helper" 2>&1 | sed 's/^/  /'
 
 # Upstream ships it ad-hoc signed as "a.out" with no hardened runtime, which
 # fails notarization. Re-sign before the bundle is sealed: nested code first.
 if [ "$BUNDLED_CORE" = "1" ]; then
-    codesign --force --options runtime --identifier dev.yami.mihomo \
+    codesign --force --options runtime --timestamp --identifier dev.yami.mihomo \
         --sign "$IDENTITY" "$APP/Contents/MacOS/mihomo" 2>&1 | sed 's/^/  /'
 fi
-codesign --force --options runtime --identifier dev.yami \
+codesign --force --options runtime --timestamp --identifier dev.yami \
     --sign "$IDENTITY" "$APP" 2>&1 | sed 's/^/  /'
 
 codesign --verify --deep --strict "$APP"

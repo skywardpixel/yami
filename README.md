@@ -155,14 +155,14 @@ The version is derived from the commit — build number from the commit count,
 short SHA in the version string — and stamped into `Info.plist` before signing,
 since editing it afterwards would invalidate the seal.
 
-**Those builds are ad-hoc signed**, because CI has no Developer ID certificate,
-and that costs two things. The **System Proxy toggle cannot work**: the helper
-only accepts a client signed with the project's Apple team ID, which an ad-hoc
-build does not have. And **Gatekeeper will refuse to open it**, since it is
-neither Developer ID signed nor notarized — `xattr -dr com.apple.quarantine
-/Applications/Yami.app` gets past that. Running the core and managing the
-subscription work normally. For a fully working app, build locally with your own
-identity.
+Artefacts are only published when a Developer ID certificate is configured — see
+[docs/RELEASING.md](docs/RELEASING.md). Without one, CI still builds and tests,
+but publishes nothing: an ad-hoc build cannot be opened after download *and* its
+privileged helper rejects it, so the System Proxy toggle does not work. Shipping
+one is a trap rather than a convenience.
+
+With signing configured, every build is notarized and stapled, so a download
+opens with no warnings and no terminal commands.
 
 ## Tests
 
