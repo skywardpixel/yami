@@ -28,7 +28,7 @@ mihomo's own config, not in this UI.
 │  View Config                        │
 │  Reveal Log                         │
 │  Quit Yami                          │
-│  Yami 0.2.2 · mihomo 1.19.30        │
+│  Yami 0.3.0 · mihomo 1.19.30        │
 └─────────────────────────────────────┘  │
 │  Updated 2 hours ago      [Update]  │
 │                                     │
@@ -37,7 +37,7 @@ mihomo's own config, not in this UI.
 │  View Config                        │
 │  Reveal Log                         │
 │  Quit Yami                          │
-│  Yami 0.2.2 · mihomo 1.19.30        │
+│  Yami 0.3.0 · mihomo 1.19.30        │
 └─────────────────────────────────────┘  │
 │  Updated 2 hours ago      [Update]  │
 │  Routing         [ Loyalsoldier ▾ ] │
@@ -47,7 +47,7 @@ mihomo's own config, not in this UI.
 │  View Config                        │
 │  Reveal Log                         │
 │  Quit Yami                          │
-│  Yami 0.2.2 · mihomo 1.19.30        │
+│  Yami 0.3.0 · mihomo 1.19.30        │
 └─────────────────────────────────────┘  │
 │  Updated 2 hours ago      [Update]  │
 │  Routing         [ Loyalsoldier ▾ ] │
@@ -57,7 +57,7 @@ mihomo's own config, not in this UI.
 │  Reveal Log                         │
 │  Quit Yami                          │
 │                                     │
-│  Yami 0.2.2 · mihomo 1.19.30        │
+│  Yami 0.3.0 · mihomo 1.19.30        │
 └─────────────────────────────────────┘  │
 │  Updated 2 hours ago      [Update]  │
 ├─────────────────────────────────────┤

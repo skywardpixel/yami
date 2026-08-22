@@ -59,7 +59,7 @@ URL text field, so there is no second settings window anywhere in the app.
 │  View Config                        │
 │  Reveal Log                         │
 │  Quit Yami                          │
-│  Yami 0.2.2 · mihomo 1.19.30        │
+│  Yami 0.3.0 · mihomo 1.19.30        │
 └─────────────────────────────────────┘  │
 │  Updated 2 hours ago      [Update]  │
 │                                     │
@@ -68,7 +68,7 @@ URL text field, so there is no second settings window anywhere in the app.
 │  View Config                        │
 │  Reveal Log                         │
 │  Quit Yami                          │
-│  Yami 0.2.2 · mihomo 1.19.30        │
+│  Yami 0.3.0 · mihomo 1.19.30        │
 └─────────────────────────────────────┘  │
 │  Updated 2 hours ago      [Update]  │
 │  Routing         [ Loyalsoldier ▾ ] │
@@ -78,7 +78,7 @@ URL text field, so there is no second settings window anywhere in the app.
 │  View Config                        │
 │  Reveal Log                         │
 │  Quit Yami                          │
-│  Yami 0.2.2 · mihomo 1.19.30        │
+│  Yami 0.3.0 · mihomo 1.19.30        │
 └─────────────────────────────────────┘  │
 │  Updated 2 hours ago      [Update]  │
 │  Routing         [ Loyalsoldier ▾ ] │
@@ -88,7 +88,7 @@ URL text field, so there is no second settings window anywhere in the app.
 │  Reveal Log                         │
 │  Quit Yami                          │
 │                                     │
-│  Yami 0.2.2 · mihomo 1.19.30        │
+│  Yami 0.3.0 · mihomo 1.19.30        │
 └─────────────────────────────────────┘  │
 │  Updated 2 hours ago      [Update]  │
 ├─────────────────────────────────────┤
