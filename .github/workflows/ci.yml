@@ -253,7 +253,10 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          PREVIOUS="$(git describe --tags --abbrev=0 "${GITHUB_REF_NAME}^" 2>/dev/null || true)"
+          # --match 'v*' matters: the rolling `canary` tag is otherwise the
+          # nearest tag, and the changelog silently starts from it.
+          PREVIOUS="$(git describe --tags --abbrev=0 --match 'v*' \
+            "${GITHUB_REF_NAME}^" 2>/dev/null || true)"
           {
             echo "### Changes"
             echo
