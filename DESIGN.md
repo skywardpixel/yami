@@ -14,6 +14,26 @@ The subscription's own YAML decides proxies and rules; Yami never second-guesses
 
 ---
 
+### Why `allow-lan` stays forced off
+
+Considered and declined. Turning it on with no `authentication` makes the proxy
+an open relay for anyone on the network — unremarkable at home, bad on café or
+office wifi — and it is a once-a-year setting, which belongs in the config rather
+than the UI.
+
+The honest counterpoint is that it is currently *impossible* rather than merely
+hidden: the override rewrites it on every update, so there is no route to sharing
+the proxy with a phone or a TV. If that is ever wanted, two things change
+together:
+
+- **`PortGuard` must follow the bind address.** With `allow-lan`, mihomo binds
+  `0.0.0.0` rather than `127.0.0.1`, and binding `127.0.0.1` over a wildcard
+  listener *succeeds* with `SO_REUSEADDR` — measured, not assumed. The
+  availability check would go blind to both port conflicts and orphaned cores,
+  which is the exact failure already fixed once.
+- **The status line must show the bind address**, so `0.0.0.0:7890` is visible
+  and the exposure is never silent.
+
 ## The whole interface
 
 `MenuBarExtra` in `.window` style — one popover, ~280pt wide. The window style
