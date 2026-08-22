@@ -254,6 +254,25 @@ job, and it is most of Yami's actual logic.
 1. **Fetch** the URL with `URLSession`, `User-Agent: mihomo/1.19.30`. Many
    providers gate their config on a recognised client UA and will hand a browser
    UA an HTML page instead of YAML.
+   The fetch is made with a fresh `URLSession`, never `URLSession.shared`.
+   `.shared` caches the system proxy configuration from process start and does
+   not notice later changes — measured, not assumed. Since the app almost always
+   launches with the proxy off, updates would have kept going out directly even
+   after the user switched the proxy on, which is exactly backwards when the
+   proxy is what makes the provider reachable.
+
+   Two attempts are made, in this order: once following the system proxy, then
+   once bypassing it. A provider blocked without the proxy needs the first; a
+   core running a stale or expired config would otherwise make the very update
+   that fixes it impossible, which needs the second.
+
+   **The bootstrap case is not solved.** On a first run there is no config, so
+   the core cannot start, so the proxy cannot be on — the fetch must go direct.
+   If the subscription host is unreachable from that network there is no path
+   from inside the app. Providers generally host subscriptions somewhere
+   reachable, which is why every client makes this assumption, but an
+   import-from-file escape hatch would close it.
+
 2. **Override.** Provider YAML is trusted for `proxies`, `proxy-groups` and
    `rules`, and overridden everywhere else, because those keys decide how Yami
    itself talks to the core:

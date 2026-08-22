@@ -116,7 +116,39 @@ final class SubscriptionStore {
         request.setValue("mihomo/1.19.30", forHTTPHeaderField: "User-Agent")
         request.timeoutInterval = 30
 
-        let (data, response) = try await URLSession.shared.data(for: request)
+        // Two attempts, and the order matters. The first follows the system
+        // proxy: when a provider's host is unreachable without it, that is the
+        // only way through. The second bypasses any proxy, because a core
+        // running a stale or expired config would otherwise make the very
+        // update that fixes it impossible.
+        do {
+            return try await send(request, throughProxy: true)
+        } catch {
+            return try await send(request, throughProxy: false)
+        }
+    }
+
+    private static func send(_ request: URLRequest, throughProxy: Bool) async throws -> String {
+        // A fresh session per fetch, deliberately not `URLSession.shared`.
+        // `.shared` caches the system proxy configuration from process start and
+        // does not notice later changes — measured. Since the app almost always
+        // launches with the proxy off, updates would keep going out directly
+        // even after the user switched the proxy on, which is exactly backwards
+        // when the proxy is what makes the provider reachable.
+        //
+        // Caching is off for the same reason a stale config is worse than a slow
+        // one: a cached response would silently mask an update.
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.requestCachePolicy = .reloadIgnoringLocalAndRemoteCacheData
+        if !throughProxy {
+            // An empty dictionary means "no proxy", distinct from nil, which
+            // means "whatever the system says".
+            configuration.connectionProxyDictionary = [:]
+        }
+        let session = URLSession(configuration: configuration)
+        defer { session.finishTasksAndInvalidate() }
+
+        let (data, response) = try await session.data(for: request)
         if let http = response as? HTTPURLResponse, !(200..<300).contains(http.statusCode) {
             throw ConfigError.validationFailed("Server returned HTTP \(http.statusCode)")
         }
