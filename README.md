@@ -152,7 +152,7 @@ Every push to `main` replaces a single rolling prerelease tagged `canary`, so th
 newest build is always at a stable URL:
 
 ```
-https://github.com/skywardpixel/yami/releases/download/canary/Yami.zip
+https://github.com/skywardpixel/Yami/releases/download/canary/Yami.zip
 ```
 
 Tagged releases are cut by pushing a `v*` tag, which publishes a real release
