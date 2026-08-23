@@ -196,12 +196,22 @@ port 7890, so it stops a running Yami and puts it back afterwards.
 
 ## Licence
 
-Yami is MIT licensed — see [LICENSE](LICENSE).
+Yami is licensed under the GNU General Public License v3.0 — see
+[LICENSE](LICENSE).
 
-The bundled [mihomo](https://github.com/MetaCubeX/mihomo) core is **GPL-3.0**
-and stays that way. The two coexist because Yami runs it as a separate process
-rather than linking it, so Yami is not a derivative work. Distributing a build
-means redistributing that binary, so its licence ships in
+> Copyright (C) 2026 skywardpixel
+>
+> This program is free software: you can redistribute it and/or modify it under
+> the terms of the GNU General Public License as published by the Free Software
+> Foundation, either version 3 of the License, or (at your option) any later
+> version.
+>
+> This program is distributed in the hope that it will be useful, but WITHOUT
+> ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+> FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+
+The bundled [mihomo](https://github.com/MetaCubeX/mihomo) core is GPL-3.0 as
+well, so a release is GPL-3.0 throughout. Its licence ships in
 `Contents/Resources/mihomo-LICENSE.txt` and
 [docs/RELEASING.md](docs/RELEASING.md) records the exact upstream tag the bytes
 came from.
