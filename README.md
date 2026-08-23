@@ -194,6 +194,18 @@ swift test           # pure logic: config rendering, log parsing, port checks
 it never touches your real subscription, cache, or system proxy. It does need
 port 7890, so it stops a running Yami and puts it back afterwards.
 
+## Licence
+
+Yami is MIT licensed — see [LICENSE](LICENSE).
+
+The bundled [mihomo](https://github.com/MetaCubeX/mihomo) core is **GPL-3.0**
+and stays that way. The two coexist because Yami runs it as a separate process
+rather than linking it, so Yami is not a derivative work. Distributing a build
+means redistributing that binary, so its licence ships in
+`Contents/Resources/mihomo-LICENSE.txt` and
+[docs/RELEASING.md](docs/RELEASING.md) records the exact upstream tag the bytes
+came from.
+
 ## State
 
 ```
